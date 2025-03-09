@@ -1,6 +1,6 @@
 package com.babelbeats.api.controller;
 
-import com.babelbeats.api.dto.AuthRequest;
+import com.babelbeats.api.dto.RegisterRequest;
 import com.babelbeats.api.dto.LoginRequest;
 import com.babelbeats.api.dto.LoginResponse;
 import com.babelbeats.api.service.AuthService;
@@ -18,7 +18,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<String> signup(@RequestBody AuthRequest request) {
+    public ResponseEntity<String> signup(@RequestBody RegisterRequest request) {
         String response = authService.registerUser(request);
         return ResponseEntity.ok(response);
     }

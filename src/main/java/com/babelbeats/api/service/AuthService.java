@@ -1,6 +1,6 @@
 package com.babelbeats.api.service;
 
-import com.babelbeats.api.dto.AuthRequest;
+import com.babelbeats.api.dto.RegisterRequest;
 import com.babelbeats.api.dto.LoginRequest;
 import com.babelbeats.api.dto.LoginResponse;
 import com.babelbeats.api.exception.InvalidCredentialsException;
@@ -25,7 +25,7 @@ public class AuthService {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    public String registerUser(AuthRequest request) {
+    public String registerUser(RegisterRequest request) {
         if (request.getEmail() == null || request.getUsername() == null || request.getPassword() == null) {
             throw new IllegalArgumentException("Email, username, and password cannot be null");
         }

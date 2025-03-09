@@ -28,4 +28,6 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String username;
+
+
 }

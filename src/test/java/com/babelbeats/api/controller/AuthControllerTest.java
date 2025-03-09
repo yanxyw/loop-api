@@ -1,7 +1,7 @@
 package com.babelbeats.api.controller;
 
 import com.babelbeats.api.config.SecurityConfig;
-import com.babelbeats.api.dto.AuthRequest;
+import com.babelbeats.api.dto.RegisterRequest;
 import com.babelbeats.api.dto.LoginRequest;
 import com.babelbeats.api.dto.LoginResponse;
 import com.babelbeats.api.service.AuthService;
@@ -33,21 +33,21 @@ public class AuthControllerTest {
     @Test
     public void testSignup() throws Exception {
         // Arrange: create a sample AuthRequest
-        AuthRequest authRequest = new AuthRequest();
-        authRequest.setUsername("testuser");
-        authRequest.setEmail("testuser@example.com");
-        authRequest.setPassword("test1234");
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUsername("testuser");
+        registerRequest.setEmail("testuser@example.com");
+        registerRequest.setPassword("test1234");
 
         // Stub the service call
         String expectedResponse = "User registered successfully";
-        Mockito.when(authService.registerUser(Mockito.any(AuthRequest.class)))
+        Mockito.when(authService.registerUser(Mockito.any(RegisterRequest.class)))
                 .thenReturn(expectedResponse);
 
         // Act & Assert: perform the POST request and verify response
         mockMvc.perform(post("/auth/signup")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(authRequest)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(expectedResponse));
     }
