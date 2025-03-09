@@ -3,7 +3,6 @@ package com.babelbeats.api.config;
 import com.babelbeats.api.repository.UserRepository;
 import com.babelbeats.api.security.JwtAuthenticationFilter;
 import com.babelbeats.api.security.JwtTokenProvider;
-import com.babelbeats.api.security.UserPrincipalService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,7 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableMethodSecurity  // Enable method-level security
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -34,7 +33,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/public/**", "/auth/**").permitAll()
+                        .requestMatchers("/", "/public/**", "/auth/**", "/docs/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // You can configure JWT filters or any other filters here
