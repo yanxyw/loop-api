@@ -8,11 +8,11 @@
 		<version>3.4.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.babelbeats</groupId>
-	<artifactId>babelbeats_api</artifactId>
+	<groupId>com.loop</groupId>
+	<artifactId>loop-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>babelbeats_api</name>
-	<description>api for babelbeats</description>
+	<name>loop-api</name>
+	<description>api for loop</description>
 	<url/>
 	<licenses>
 		<license/>
