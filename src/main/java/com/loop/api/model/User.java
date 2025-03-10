@@ -1,12 +1,15 @@
-package com.babelbeats.api.model;
+package com.loop.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @Getter
 @Setter
+@ToString(exclude = "password")
 @Table(name = "users", uniqueConstraints = {
         @UniqueConstraint(columnNames = "email"),
         @UniqueConstraint(columnNames = "mobile"),
@@ -23,9 +26,16 @@ public class User {
     @Column(unique = true)
     private String mobile;
 
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
     @Column(nullable = false, unique = true)
     private String username;
+
+    @Column(nullable = false)
+    private boolean admin = false;
+
+    @Column
+    private String profileUrl;
 }

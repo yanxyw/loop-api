@@ -1,4 +1,4 @@
-package com.babelbeats.api;
+package com.loop.api;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

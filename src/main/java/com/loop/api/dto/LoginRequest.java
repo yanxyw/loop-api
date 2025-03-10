@@ -1,12 +1,13 @@
-package com.babelbeats.api.dto;
+package com.loop.api.dto;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class AuthRequest {
+@Builder
+public class LoginRequest {
     private String email;
     private String password;
-    private String username;
 }

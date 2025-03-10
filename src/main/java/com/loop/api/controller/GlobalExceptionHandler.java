@@ -1,8 +1,8 @@
-package com.babelbeats.api.controller;
+package com.loop.api.controller;
 
-import com.babelbeats.api.dto.ErrorResponse;
-import com.babelbeats.api.exception.UserAlreadyExistsException;
-import com.babelbeats.api.exception.InvalidCredentialsException;
+import com.loop.api.dto.ErrorResponse;
+import com.loop.api.exception.UserAlreadyExistsException;
+import com.loop.api.exception.InvalidCredentialsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;

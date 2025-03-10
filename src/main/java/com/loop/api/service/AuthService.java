@@ -1,31 +1,31 @@
-package com.babelbeats.api.service;
+package com.loop.api.service;
 
-import com.babelbeats.api.dto.AuthRequest;
-import com.babelbeats.api.dto.LoginRequest;
-import com.babelbeats.api.dto.LoginResponse;
-import com.babelbeats.api.exception.InvalidCredentialsException;
-import com.babelbeats.api.exception.UserAlreadyExistsException;
-import com.babelbeats.api.model.User;
-import com.babelbeats.api.repository.UserRepository;
-import com.babelbeats.api.security.JwtTokenProvider;
+import com.loop.api.dto.RegisterRequest;
+import com.loop.api.dto.LoginRequest;
+import com.loop.api.dto.LoginResponse;
+import com.loop.api.exception.InvalidCredentialsException;
+import com.loop.api.exception.UserAlreadyExistsException;
+import com.loop.api.model.User;
+import com.loop.api.repository.UserRepository;
+import com.loop.api.security.JwtTokenProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
-public class UserService {
+public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    public String registerUser(AuthRequest request) {
+    public String registerUser(RegisterRequest request) {
         if (request.getEmail() == null || request.getUsername() == null || request.getPassword() == null) {
             throw new IllegalArgumentException("Email, username, and password cannot be null");
         }
@@ -60,7 +60,11 @@ public class UserService {
             }
 
             String token = jwtTokenProvider.generateToken(request.getEmail());
-            return new LoginResponse(token, request.getEmail(), "Login successful");
+            return LoginResponse.builder()
+                    .token(token)
+                    .email(request.getEmail())
+                    .message("Login successful")
+                    .build();
         } catch (InvalidCredentialsException e) {
             throw e;
         } catch (Exception e) {

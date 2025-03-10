@@ -1,4 +1,4 @@
-package com.babelbeats.api.exception;
+package com.loop.api.exception;
 
 public class UserAlreadyExistsException extends RuntimeException {
     public UserAlreadyExistsException(String message) {

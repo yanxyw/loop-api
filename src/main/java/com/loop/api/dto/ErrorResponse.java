@@ -1,4 +1,4 @@
-package com.babelbeats.api.dto;
+package com.loop.api.dto;
 
 public class ErrorResponse {
     private int status;
