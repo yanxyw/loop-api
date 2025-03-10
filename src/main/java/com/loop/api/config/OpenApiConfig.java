@@ -12,8 +12,8 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("BabelBeats API")
+                        .title("Loop API")
                         .version("v1.0")
-                        .description("Documentation for the BabelBeats API"));
+                        .description("Documentation for the Loop API"));
     }
 }
