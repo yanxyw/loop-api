@@ -26,12 +26,18 @@ public class AuthService {
     }
 
     public String registerUser(RegisterRequest request) {
-        if (request.getEmail() == null || request.getUsername() == null || request.getPassword() == null) {
-            throw new IllegalArgumentException("Email, username, and password cannot be null");
+        if (request.getEmail() == null || request.getEmail().isBlank() ||
+                request.getUsername() == null || request.getUsername().isBlank() ||
+                request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Email, username, and password cannot be empty or null");
         }
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new UserAlreadyExistsException("User with email " + request.getEmail() + " already exists");
+        }
+
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new UserAlreadyExistsException("User with username " + request.getUsername() + " already exists");
         }
 
         try {

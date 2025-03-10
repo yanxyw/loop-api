@@ -1,12 +1,16 @@
 package com.loop.api.service;
 
+import com.loop.api.exception.UserAlreadyExistsException;
+import com.loop.api.exception.UserNotFoundException;
 import com.loop.api.model.User;
 import com.loop.api.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class UserService {
 
     private final UserRepository userRepository;
@@ -21,11 +25,24 @@ public class UserService {
 
     public User getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
     }
 
     public User createUser(User user) {
-        // Additional validations (e.g., unique email/username) can be added here
+        if (user.getEmail() == null || user.getEmail().isBlank() ||
+                user.getUsername() == null || user.getUsername().isBlank() ||
+                user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Email, username, and password cannot be empty or null");
+        }
+
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new UserAlreadyExistsException("User with email " + user.getEmail() + " already exists");
+        }
+
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new UserAlreadyExistsException("User with username " + user.getUsername() + " already exists");
+        }
+
         return userRepository.save(user);
     }
 
