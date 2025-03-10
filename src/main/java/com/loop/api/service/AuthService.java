@@ -4,10 +4,10 @@ import com.loop.api.dto.RegisterRequest;
 import com.loop.api.dto.LoginRequest;
 import com.loop.api.dto.LoginResponse;
 import com.loop.api.exception.InvalidCredentialsException;
-import com.loop.api.exception.UserAlreadyExistsException;
 import com.loop.api.model.User;
 import com.loop.api.repository.UserRepository;
 import com.loop.api.security.JwtTokenProvider;
+import com.loop.api.util.UserValidationUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,19 +26,7 @@ public class AuthService {
     }
 
     public String registerUser(RegisterRequest request) {
-        if (request.getEmail() == null || request.getEmail().isBlank() ||
-                request.getUsername() == null || request.getUsername().isBlank() ||
-                request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new IllegalArgumentException("Email, username, and password cannot be empty or null");
-        }
-
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new UserAlreadyExistsException("User with email " + request.getEmail() + " already exists");
-        }
-
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new UserAlreadyExistsException("User with username " + request.getUsername() + " already exists");
-        }
+        UserValidationUtil.validateNewUser(request.getEmail(), request.getUsername(), request.getPassword(), userRepository);
 
         try {
             User user = new User();
