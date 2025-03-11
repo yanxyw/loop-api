@@ -1,5 +1,6 @@
 package com.loop.api.service;
 
+import com.loop.api.dto.UpdateUserProfileRequest;
 import com.loop.api.dto.UserResponse;
 import com.loop.api.exception.UserNotFoundException;
 import com.loop.api.model.User;
@@ -57,15 +58,23 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User updateUser(Long id, User userDetails) {
+    public User updateUserProfile(Long id, UpdateUserProfileRequest profileRequest) {
         User existingUser = getUserEntityById(id);
-        existingUser.setEmail(userDetails.getEmail());
-        existingUser.setMobile(userDetails.getMobile());
-        existingUser.setUsername(userDetails.getUsername());
-        existingUser.setPassword(userDetails.getPassword());
-        existingUser.setAdmin(userDetails.isAdmin());
-        existingUser.setProfileUrl(userDetails.getProfileUrl());
-
+        if (profileRequest.getEmail() != null) {
+            existingUser.setEmail(profileRequest.getEmail());
+        }
+        if (profileRequest.getMobile() != null) {
+            existingUser.setMobile(profileRequest.getMobile());
+        }
+        if (profileRequest.getUsername() != null) {
+            existingUser.setUsername(profileRequest.getUsername());
+        }
+        if (profileRequest.getAdmin() != null) {
+            existingUser.setAdmin(profileRequest.getAdmin());
+        }
+        if (profileRequest.getProfileUrl() != null) {
+            existingUser.setProfileUrl(profileRequest.getProfileUrl());
+        }
         return userRepository.save(existingUser);
     }
 

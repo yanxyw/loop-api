@@ -1,6 +1,5 @@
 package com.loop.api.controller;
 
-import com.loop.api.dto.UpdateUserProfileRequest;
 import com.loop.api.dto.UserResponse;
 import com.loop.api.model.User;
 import com.loop.api.service.UserService;
@@ -8,36 +7,45 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/users")
-public class UserController {
+@RequestMapping("/admin/users")
+public class AdminUserController {
 
     private final UserService userService;
 
-    public UserController(UserService userService) {
+    public AdminUserController(UserService userService) {
         this.userService = userService;
     }
 
-    // Get my profile
+    // Get all users
+    @GetMapping
+    @PreAuthorize("principal.isAdmin()")
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        List<UserResponse> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
+
+    // Get a single user
     @GetMapping("/{id}")
-    @PreAuthorize("#id == principal.getId()")
+    @PreAuthorize("principal.isAdmin()")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
 
-    // Update my profile
-    @PutMapping("/{id}")
-    @PreAuthorize("#id == principal.getId()")
-    public ResponseEntity<User> updateUserProfile(@PathVariable Long id,
-                                                  @RequestBody UpdateUserProfileRequest profileRequest) {
-        User updatedUser = userService.updateUserProfile(id, profileRequest);
-        return ResponseEntity.ok(updatedUser);
+    // Create a new user
+    @PostMapping
+    @PreAuthorize("principal.isAdmin()")
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        User createdUser = userService.createUser(user);
+        return ResponseEntity.ok(createdUser);
     }
 
-    // Delete my account
+    // Delete a user
     @DeleteMapping("/{id}")
-    @PreAuthorize("#id == principal.getId()")
+    @PreAuthorize("principal.isAdmin()")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.ok("User deleted successfully");
