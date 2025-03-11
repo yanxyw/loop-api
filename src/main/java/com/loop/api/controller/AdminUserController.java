@@ -21,7 +21,7 @@ public class AdminUserController {
 
     // Get all users
     @GetMapping
-    @PreAuthorize("principal.isAdmin()")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
@@ -29,7 +29,7 @@ public class AdminUserController {
 
     // Get a single user
     @GetMapping("/{id}")
-    @PreAuthorize("principal.isAdmin()")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(user);
@@ -37,7 +37,7 @@ public class AdminUserController {
 
     // Create a new user
     @PostMapping
-    @PreAuthorize("principal.isAdmin()")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<User> createUser(@RequestBody User user) {
         User createdUser = userService.createUser(user);
         return ResponseEntity.ok(createdUser);
@@ -45,7 +45,7 @@ public class AdminUserController {
 
     // Delete a user
     @DeleteMapping("/{id}")
-    @PreAuthorize("principal.isAdmin()")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.ok("User deleted successfully");

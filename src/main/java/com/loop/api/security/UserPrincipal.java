@@ -2,6 +2,7 @@ package com.loop.api.security;
 
 import com.loop.api.model.User;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -15,22 +16,12 @@ public class UserPrincipal implements UserDetails {
         this.user = user;
     }
 
-    public boolean isAdmin() {
-        return user.isAdmin();
-    }
-
     public Long getId() {
         return user.getId();
     }
 
-    // You can expose other properties if needed, like email or username.
     public String getEmail() {
         return user.getEmail();
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
     }
 
     @Override
@@ -41,6 +32,15 @@ public class UserPrincipal implements UserDetails {
     @Override
     public String getUsername() {
         return user.getUsername();
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (user.isAdmin()) {
+            return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        } else {
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        }
     }
 
     @Override
