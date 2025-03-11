@@ -4,7 +4,8 @@ import com.loop.api.exception.UserAlreadyExistsException;
 import com.loop.api.repository.UserRepository;
 
 public class UserValidationUtil {
-    public static void validateNewUser(String email, String username, String password, UserRepository userRepository) {
+    public static void validateNewUser(String email, String username, String password, String mobile,
+                                       UserRepository userRepository) {
         if (email == null || email.isBlank() ||
                 username == null || username.isBlank() ||
                 password == null || password.isBlank()) {
@@ -17,6 +18,12 @@ public class UserValidationUtil {
 
         if (userRepository.findByUsername(username).isPresent()) {
             throw new UserAlreadyExistsException("User with username '" + username + "' already exists.");
+        }
+
+        if (mobile != null && !mobile.isBlank()) {
+            if (userRepository.findByMobile(mobile).isPresent()) {
+                throw new UserAlreadyExistsException("User with mobile '" + mobile + "' already exists.");
+            }
         }
     }
 }

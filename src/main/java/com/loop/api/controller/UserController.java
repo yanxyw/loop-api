@@ -1,5 +1,6 @@
 package com.loop.api.controller;
 
+import com.loop.api.dto.UserResponse;
 import com.loop.api.model.User;
 import com.loop.api.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -21,16 +22,16 @@ public class UserController {
     // Get all users: Only admin
     @GetMapping
     @PreAuthorize("principal.isAdmin()")
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
     // Get a single user: Admin or the user themselves
     @GetMapping("/{id}")
     @PreAuthorize("principal.isAdmin() or #id == principal.getId()")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        User user = userService.getUserById(id);
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+        UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
 

@@ -19,14 +19,16 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
     public String registerUser(RegisterRequest request) {
-        UserValidationUtil.validateNewUser(request.getEmail(), request.getUsername(), request.getPassword(), userRepository);
+        UserValidationUtil.validateNewUser(request.getEmail(), request.getUsername(), request.getPassword(), null,
+                userRepository);
 
         try {
             User user = new User();
@@ -49,7 +51,8 @@ public class AuthService {
         try {
             Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
 
-            if (userOptional.isEmpty() || !passwordEncoder.matches(request.getPassword(), userOptional.get().getPassword())) {
+            if (userOptional.isEmpty() || !passwordEncoder.matches(request.getPassword(),
+                    userOptional.get().getPassword())) {
                 throw new InvalidCredentialsException("Invalid email or password");
             }
 
