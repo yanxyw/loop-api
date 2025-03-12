@@ -58,8 +58,16 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User updateUserProfile(Long id, UpdateUserProfileRequest profileRequest) {
+    public UserResponse updateUserProfile(Long id, UpdateUserProfileRequest profileRequest) {
         User existingUser = getUserEntityById(id);
+
+        UserValidationUtil.validateUniqueUserFields(
+                profileRequest.getEmail(),
+                profileRequest.getUsername(),
+                profileRequest.getMobile(),
+                userRepository,
+                id);
+
         if (profileRequest.getEmail() != null) {
             existingUser.setEmail(profileRequest.getEmail());
         }
@@ -69,13 +77,10 @@ public class UserService {
         if (profileRequest.getUsername() != null) {
             existingUser.setUsername(profileRequest.getUsername());
         }
-        if (profileRequest.getAdmin() != null) {
-            existingUser.setAdmin(profileRequest.getAdmin());
-        }
         if (profileRequest.getProfileUrl() != null) {
             existingUser.setProfileUrl(profileRequest.getProfileUrl());
         }
-        return userRepository.save(existingUser);
+        return convertToUserResponse(userRepository.save(existingUser));
     }
 
     public void deleteUser(Long id) {
