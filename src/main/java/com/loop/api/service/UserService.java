@@ -6,6 +6,7 @@ import com.loop.api.exception.UserNotFoundException;
 import com.loop.api.model.User;
 import com.loop.api.repository.UserRepository;
 import com.loop.api.util.UserValidationUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +18,11 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<UserResponse> getAllUsers() {
@@ -51,11 +54,11 @@ public class UserService {
         return response;
     }
 
-    public User createUser(User user) {
+    public UserResponse createUser(User user) {
         UserValidationUtil.validateNewUser(user.getEmail(), user.getUsername(), user.getPassword(), user.getMobile(),
                 userRepository);
-
-        return userRepository.save(user);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return convertToUserResponse(userRepository.save(user));
     }
 
     public UserResponse updateUserProfile(Long id, UpdateUserProfileRequest profileRequest) {
