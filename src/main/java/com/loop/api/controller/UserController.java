@@ -5,7 +5,7 @@ import com.loop.api.dto.UserResponse;
 import com.loop.api.security.UserPrincipal;
 import com.loop.api.service.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,8 +20,7 @@ public class UserController {
 
     // Get my profile
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getMyProfile(Authentication authentication) {
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+    public ResponseEntity<UserResponse> getMyProfile(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         UserResponse user = userService.getUserById(userPrincipal.getId());
         return ResponseEntity.ok(user);
     }
@@ -29,16 +28,14 @@ public class UserController {
     // Update my profile
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateMyProfile(@RequestBody UpdateUserProfileRequest profileRequest,
-                                                Authentication authentication) {
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+                                                        @AuthenticationPrincipal UserPrincipal userPrincipal) {
         UserResponse updatedUser = userService.updateUserProfile(userPrincipal.getId(), profileRequest);
         return ResponseEntity.ok(updatedUser);
     }
 
     // Delete my account
     @DeleteMapping("/me")
-    public ResponseEntity<String> deleteMyAccount(Authentication authentication) {
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+    public ResponseEntity<String> deleteMyAccount(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         userService.deleteUser(userPrincipal.getId());
         return ResponseEntity.ok("User deleted successfully");
     }
