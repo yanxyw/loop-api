@@ -27,4 +27,3 @@ public class ApiResponse<T> {
         return new ApiResponse<>(Status.ERROR, httpStatus.value(), message, null);
     }
 }
-
