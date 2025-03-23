@@ -19,8 +19,8 @@ public class ApiResponse<T> {
         this.data = data;
     }
 
-    public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<>(Status.SUCCESS, 200, message, data);
+    public static <T> ApiResponse<T> success(HttpStatus httpStatus, String message, T data) {
+        return new ApiResponse<>(Status.SUCCESS, httpStatus.value(), message, data);
     }
 
     public static <T> ApiResponse<T> error(HttpStatus httpStatus, String message) {
