@@ -1,6 +1,7 @@
 package com.loop.api.common.dto.response;
 
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 
 @Getter
 public class ApiResponse<T> {
@@ -22,8 +23,8 @@ public class ApiResponse<T> {
         return new ApiResponse<>(Status.SUCCESS, 200, message, data);
     }
 
-    public static <T> ApiResponse<T> error(int code, String message) {
-        return new ApiResponse<>(Status.ERROR, code, message, null);
+    public static <T> ApiResponse<T> error(HttpStatus httpStatus, String message) {
+        return new ApiResponse<>(Status.ERROR, httpStatus.value(), message, null);
     }
 }
 

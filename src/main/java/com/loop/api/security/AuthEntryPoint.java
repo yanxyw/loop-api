@@ -26,7 +26,7 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
                          AuthenticationException authException) throws IOException {
 
         ApiResponse<Void> errorResponse = ApiResponse.error(
-                HttpStatus.UNAUTHORIZED.value(),
+                HttpStatus.UNAUTHORIZED,
                 "Unauthorized: " + authException.getMessage()
         );
 
@@ -35,4 +35,3 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 }
-
