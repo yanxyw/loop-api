@@ -1,5 +1,8 @@
 package com.loop.api.common.dto.response;
 
+import lombok.Getter;
+
+@Getter
 public class ApiResponse<T> {
     private Status status;
     private int code;

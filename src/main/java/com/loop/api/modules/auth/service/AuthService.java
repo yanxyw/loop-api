@@ -1,13 +1,14 @@
 package com.loop.api.modules.auth.service;
 
-import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.common.exception.InvalidCredentialsException;
+import com.loop.api.common.exception.UserNotFoundException;
+import com.loop.api.common.util.UserValidationUtil;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
-import com.loop.api.common.exception.InvalidCredentialsException;
+import com.loop.api.modules.auth.dto.RegisterRequest;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import com.loop.api.security.JwtTokenProvider;
-import com.loop.api.common.util.UserValidationUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -51,7 +52,11 @@ public class AuthService {
         try {
             Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
 
-            if (userOptional.isEmpty() || !passwordEncoder.matches(request.getPassword(),
+            if (userOptional.isEmpty()) {
+                throw new UserNotFoundException("No account found with this email");
+            }
+
+            if (!passwordEncoder.matches(request.getPassword(),
                     userOptional.get().getPassword())) {
                 throw new InvalidCredentialsException("Invalid email or password");
             }
@@ -61,7 +66,7 @@ public class AuthService {
                     .token(token)
                     .message("Login successful")
                     .build();
-        } catch (InvalidCredentialsException e) {
+        } catch (UserNotFoundException | InvalidCredentialsException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Error during login: " + e.getMessage());

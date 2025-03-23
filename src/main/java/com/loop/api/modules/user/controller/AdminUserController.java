@@ -1,8 +1,10 @@
 package com.loop.api.modules.user.controller;
 
+import com.loop.api.common.dto.response.ApiResponse;
 import com.loop.api.modules.user.dto.UserResponse;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.service.UserService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,34 +22,34 @@ public class AdminUserController {
     }
 
     // Get all users
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
         List<UserResponse> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(ApiResponse.success("Fetched all users", users));
     }
 
     // Get a single user
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable Long id) {
         UserResponse user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(ApiResponse.success("User fetched", user));
     }
 
     // Create a new user
-    @PostMapping
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> createUser(@RequestBody User user) {
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody User user) {
         UserResponse createdUser = userService.createUser(user);
-        return ResponseEntity.ok(createdUser);
+        return ResponseEntity.ok(ApiResponse.success("User created successfully", createdUser));
     }
 
     // Delete a user
-    @DeleteMapping("/{id}")
+    @DeleteMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        return ResponseEntity.ok("User deleted successfully");
+        return ResponseEntity.ok(ApiResponse.success("User deleted successfully", null));
     }
 }
