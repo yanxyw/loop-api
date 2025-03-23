@@ -1,6 +1,6 @@
 package com.loop.api.controller;
 
-import com.loop.api.service.AuthService;
+import com.loop.api.modules.auth.service.AuthService;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;

@@ -1,9 +1,10 @@
 package com.loop.api.controller;
 
-import com.loop.api.dto.RegisterRequest;
-import com.loop.api.dto.LoginRequest;
-import com.loop.api.dto.LoginResponse;
-import com.loop.api.service.AuthService;
+import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.dto.LoginRequest;
+import com.loop.api.modules.auth.dto.LoginResponse;
+import com.loop.api.modules.auth.controller.AuthController;
+import com.loop.api.modules.auth.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

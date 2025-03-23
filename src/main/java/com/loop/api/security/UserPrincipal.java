@@ -1,6 +1,6 @@
 package com.loop.api.security;
 
-import com.loop.api.model.User;
+import com.loop.api.modules.user.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

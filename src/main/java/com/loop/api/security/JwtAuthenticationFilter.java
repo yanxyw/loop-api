@@ -1,7 +1,7 @@
 package com.loop.api.security;
 
-import com.loop.api.model.User;
-import com.loop.api.repository.UserRepository;
+import com.loop.api.modules.user.model.User;
+import com.loop.api.modules.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
