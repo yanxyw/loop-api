@@ -58,7 +58,6 @@ public class AuthControllerTest {
 
         LoginResponse loginResponse = LoginResponse.builder()
                 .token("abc123")
-                .email("testuser@example.com")
                 .message("Login successful")
                 .build();
 

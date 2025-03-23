@@ -59,7 +59,6 @@ public class AuthService {
             String token = jwtTokenProvider.generateToken(request.getEmail());
             return LoginResponse.builder()
                     .token(token)
-                    .email(request.getEmail())
                     .message("Login successful")
                     .build();
         } catch (InvalidCredentialsException e) {
