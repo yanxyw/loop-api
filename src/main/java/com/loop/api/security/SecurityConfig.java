@@ -42,7 +42,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/public/**", "/auth/**", "/docs/**").permitAll()
+                        .requestMatchers("/", "/public/**", "/auth/**", "/docs/**", "/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 // You can configure JWT filters or any other filters here
