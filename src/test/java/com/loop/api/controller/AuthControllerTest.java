@@ -63,7 +63,6 @@ public class AuthControllerTest {
 
         LoginResponse loginResponse = LoginResponse.builder()
                 .token("abc123")
-                .message("Login successful")
                 .build();
 
         Mockito.when(authService.loginUser(any(LoginRequest.class)))
@@ -78,7 +77,6 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("Login successful"))
-                .andExpect(jsonPath("$.data.token").value("abc123"))
-                .andExpect(jsonPath("$.data.message").value("Login successful"));
+                .andExpect(jsonPath("$.data.token").value("abc123"));
     }
 }

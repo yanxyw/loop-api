@@ -64,7 +64,6 @@ public class AuthService {
             String token = jwtTokenProvider.generateToken(request.getEmail());
             return LoginResponse.builder()
                     .token(token)
-                    .message("Login successful")
                     .build();
         } catch (UserNotFoundException | InvalidCredentialsException e) {
             throw e;
