@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.user.dto.UpdateUserProfileRequest;
 import com.loop.api.modules.user.dto.UserResponse;
-import com.loop.api.modules.user.mapper.UserMapper;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.service.UserService;
 import com.loop.api.security.UserPrincipal;
@@ -23,9 +22,8 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,9 +36,6 @@ public class UserControllerTest {
 
 	@MockitoBean
 	private UserService userService;
-
-	@MockitoBean
-	private UserMapper userMapper;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -122,33 +117,52 @@ public class UserControllerTest {
 	@Nested
 	@DisplayName("Tests for PUT /me")
 	class UpdateMyProfileTests {
-
 		@Test
 		@DisplayName("Should return 200 and updated profile when valid request is made")
 		void shouldUpdateProfileSuccessfully() throws Exception {
-			UpdateUserProfileRequest req = new UpdateUserProfileRequest();
-			req.setEmail("updated@example.com");
+			UpdateUserProfileRequest request = new UpdateUserProfileRequest();
+			request.setEmail("updated@example.com");
 
-			userResponse.setEmail(req.getEmail());
+			userResponse.setEmail(request.getEmail());
 
 			when(userService.updateUserProfile(eq(user.getId()), any())).thenReturn(userResponse);
 
 			mockMvc.perform(put("/users/me")
 							.with(authenticated(userPrincipal))
 							.contentType(MediaType.APPLICATION_JSON)
-							.content(objectMapper.writeValueAsString(req)))
+							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.data.email").value(req.getEmail()));
+					.andExpect(jsonPath("$.data.email").value(request.getEmail()));
 		}
+
+		@Test
+		@DisplayName("Should return 404 if user not found")
+		void shouldReturnNotFoundIfUserDoesNotExist() throws Exception {
+			UpdateUserProfileRequest request = new UpdateUserProfileRequest();
+			request.setUsername("updatedUser");
+
+			when(userService.updateUserProfile(eq(user.getId()), any()))
+					.thenThrow(new UserNotFoundException("User not found with id: " + user.getId()));
+
+			mockMvc.perform(put("/users/me")
+							.with(authenticated(userPrincipal))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isNotFound())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(404))
+					.andExpect(jsonPath("$.message").value("User not found with id: " + user.getId()));
+		}
+
 
 		@Test
 		@DisplayName("Should return 400 with invalid fields")
 		void shouldReturnBadRequestOnValidationFailure() throws Exception {
 			UpdateUserProfileRequest badRequest = new UpdateUserProfileRequest();
 			badRequest.setEmail("invalid-email");
-
-			when(userService.updateUserProfile(eq(user.getId()), any()))
-					.thenThrow(new IllegalArgumentException("Invalid email format"));
+			badRequest.setUsername("a@!");
+			badRequest.setMobile("123abc");
+			badRequest.setProfileUrl("not-a-url");
 
 			mockMvc.perform(put("/users/me")
 							.with(authenticated(userPrincipal))
@@ -157,8 +171,44 @@ public class UserControllerTest {
 					.andExpect(status().isBadRequest())
 					.andExpect(jsonPath("$.status").value("ERROR"))
 					.andExpect(jsonPath("$.code").value(400))
-					.andExpect(jsonPath("$.message").value("Invalid email format"));
+					.andExpect(jsonPath("$.message").value("Validation failed"))
+					.andExpect(jsonPath("$.data.email").value("Email format is invalid"))
+					.andExpect(jsonPath("$.data.username").value("Username can only contain letters, numbers and " +
+							"underscores"))
+					.andExpect(jsonPath("$.data.mobile").value("Mobile number is not valid"))
+					.andExpect(jsonPath("$.data.profileUrl").value("Profile URL must be a valid URL"));
 		}
 	}
 
+	@Nested
+	@DisplayName("Tests for DELETE /me")
+	class DeleteMyAccountTests {
+		@Test
+		@DisplayName("Should delete user and return 200 when authenticated")
+		void shouldDeleteUserSuccessfully() throws Exception {
+			doNothing().when(userService).deleteUser(user.getId());
+
+			mockMvc.perform(delete("/users/me")
+							.with(authenticated(userPrincipal)))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("SUCCESS"))
+					.andExpect(jsonPath("$.code").value(200))
+					.andExpect(jsonPath("$.message").value("User deleted successfully"))
+					.andExpect(jsonPath("$.data").doesNotExist());
+		}
+
+		@Test
+		@DisplayName("Should return 404 if user does not exist")
+		void shouldReturnNotFoundIfUserNotFound() throws Exception {
+			doThrow(new UserNotFoundException("User not found with id: " + user.getId()))
+					.when(userService).deleteUser(user.getId());
+
+			mockMvc.perform(delete("/users/me")
+							.with(authenticated(userPrincipal)))
+					.andExpect(status().isNotFound())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(404))
+					.andExpect(jsonPath("$.message").value("User not found with id: " + user.getId()));
+		}
+	}
 }

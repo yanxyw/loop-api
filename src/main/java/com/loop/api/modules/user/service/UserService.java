@@ -18,14 +18,12 @@ import java.util.List;
 public class UserService {
 
 	private final UserRepository userRepository;
-	private final PasswordEncoder passwordEncoder;
 	private final UserMapper userMapper;
 
 	public UserService(UserRepository userRepository,
 					   PasswordEncoder passwordEncoder,
 					   UserMapper userMapper) {
 		this.userRepository = userRepository;
-		this.passwordEncoder = passwordEncoder;
 		this.userMapper = userMapper;
 	}
 
