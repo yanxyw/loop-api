@@ -1,9 +1,14 @@
 package com.loop.api.modules.auth.service;
 
+import com.loop.api.common.exception.InvalidCredentialsException;
 import com.loop.api.common.exception.UserAlreadyExistsException;
+import com.loop.api.common.exception.UserNotFoundException;
+import com.loop.api.modules.auth.dto.LoginRequest;
+import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
+import com.loop.api.security.JwtTokenProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
@@ -27,6 +32,8 @@ public class AuthServiceTest {
 	private UserRepository userRepository;
 	@Mock
 	private PasswordEncoder passwordEncoder;
+	@Mock
+	private JwtTokenProvider jwtTokenProvider;
 
 	@InjectMocks
 	private AuthService authService;
@@ -50,6 +57,7 @@ public class AuthServiceTest {
 		}
 
 		@Test
+		@DisplayName("Should throw IllegalArgumentException when required fields are missing")
 		void shouldThrowIllegalArgumentExceptionForMissingFields() {
 			RegisterRequest request = new RegisterRequest();
 
@@ -60,6 +68,7 @@ public class AuthServiceTest {
 		}
 
 		@Test
+		@DisplayName("Should throw UserAlreadyExistsException when email already exists")
 		void shouldThrowUserAlreadyExistsExceptionIfEmailExists() {
 			RegisterRequest request = new RegisterRequest("exists@example.com", "password", "existinguser");
 
@@ -73,6 +82,7 @@ public class AuthServiceTest {
 		}
 
 		@Test
+		@DisplayName("Should throw UserAlreadyExistsException when username already exists")
 		void shouldThrowUserAlreadyExistsExceptionIfUsernameExists() {
 			RegisterRequest request = new RegisterRequest("exists@example.com", "password", "existinguser");
 
@@ -85,6 +95,7 @@ public class AuthServiceTest {
 		}
 
 		@Test
+		@DisplayName("Should throw RuntimeException when saving user fails unexpectedly")
 		void shouldThrowRuntimeExceptionOnUnexpectedSaveFailure() {
 			RegisterRequest request = new RegisterRequest("new@example.com", "password", "newuser");
 			request.setEmail("new@example.com");
@@ -100,7 +111,81 @@ public class AuthServiceTest {
 			assertTrue(ex.getMessage().contains("Error registering user"));
 		}
 
+		@Nested
+		@DisplayName("Tests for login service")
+		class LoginTests {
+			@Test
+			@DisplayName("Should return token when login is successful")
+			void shouldLoginSuccessfully() {
+				LoginRequest request = new LoginRequest("user@example.com", "password");
+				User user = new User();
+				user.setEmail("user@example.com");
+				user.setPassword("hashedPassword");
 
+				when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+				when(passwordEncoder.matches("password", "hashedPassword")).thenReturn(true);
+				when(jwtTokenProvider.generateToken("user@example.com")).thenReturn("jwt-token");
+
+				LoginResponse response = authService.loginUser(request);
+
+				assertEquals("jwt-token", response.getToken());
+				verify(userRepository).findByEmail("user@example.com");
+				verify(passwordEncoder).matches("password", "hashedPassword");
+				verify(jwtTokenProvider).generateToken("user@example.com");
+			}
+
+			@Test
+			@DisplayName("Should throw IllegalArgumentException if email is null")
+			void shouldThrowIfEmailIsNull() {
+				LoginRequest request = new LoginRequest(null, "password");
+
+				assertThrows(IllegalArgumentException.class, () -> authService.loginUser(request));
+			}
+
+			@Test
+			@DisplayName("Should throw IllegalArgumentException if password is null")
+			void shouldThrowIfPasswordIsNull() {
+				LoginRequest request = new LoginRequest("user@example.com", null);
+
+				assertThrows(IllegalArgumentException.class, () -> authService.loginUser(request));
+			}
+
+			@Test
+			@DisplayName("Should throw UserNotFoundException if user does not exist")
+			void shouldThrowIfUserNotFound() {
+				LoginRequest request = new LoginRequest("notfound@example.com", "password");
+
+				when(userRepository.findByEmail("notfound@example.com")).thenReturn(Optional.empty());
+
+				assertThrows(UserNotFoundException.class, () -> authService.loginUser(request));
+			}
+
+			@Test
+			@DisplayName("Should throw InvalidCredentialsException if password is incorrect")
+			void shouldThrowIfPasswordIncorrect() {
+				LoginRequest request = new LoginRequest("user@example.com", "wrongPassword");
+				User user = new User();
+				user.setEmail("user@example.com");
+				user.setPassword("hashedPassword");
+
+				when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+				when(passwordEncoder.matches("wrongPassword", "hashedPassword")).thenReturn(false);
+
+				assertThrows(InvalidCredentialsException.class, () -> authService.loginUser(request));
+			}
+
+			@Test
+			@DisplayName("Should throw RuntimeException if unexpected exception occurs")
+			void shouldThrowRuntimeExceptionOnUnexpectedError() {
+				LoginRequest request = new LoginRequest("user@example.com", "password");
+
+				when(userRepository.findByEmail("user@example.com")).thenThrow(new RuntimeException("DB error"));
+
+				RuntimeException exception = assertThrows(RuntimeException.class,
+						() -> authService.loginUser(request));
+				assertTrue(exception.getMessage().contains("Error during login: DB error"));
+			}
+		}
 	}
 }
 

@@ -63,8 +63,7 @@ public class AuthControllerTest {
 		@Test
 		@DisplayName("Should return 409 Conflict if user already exists")
 		void shouldReturnConflictIfUserExists() throws Exception {
-			RegisterRequest request = new RegisterRequest("exists@example.com", "password",
-					"existinguser");
+			RegisterRequest request = new RegisterRequest("exists@example.com", "password", "existinguser");
 
 			when(authService.registerUser(any(RegisterRequest.class)))
 					.thenThrow(new UserAlreadyExistsException("User with email 'exists@example.com' already exists."));
