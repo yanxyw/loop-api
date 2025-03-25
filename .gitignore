@@ -35,3 +35,8 @@ build/
 ### Environment files ###
 .env
 .env.*
+
+## Codecov ##
+codecov
+codecov.SHA256SUM
+codecov.SHA256SUM.sig

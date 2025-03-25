@@ -1,18 +1,18 @@
-package com.loop.api.controller;
+package com.loop.api.modules.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.loop.api.modules.auth.controller.AuthController;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
 import com.loop.api.modules.auth.service.AuthService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -21,15 +21,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Tag("UnitTest")
 @WebMvcTest(AuthController.class)
-@Import(AuthControllerTestConfig.class)
 @AutoConfigureMockMvc(addFilters = false)
 public class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
+    @MockitoBean
     private AuthService authService;
 
     @Test
@@ -39,7 +39,6 @@ public class AuthControllerTest {
         request.setEmail("testuser@example.com");
         request.setPassword("test1234");
 
-        // Stub the mock in your test (the mock is from AuthControllerTestConfig)
         Mockito.when(authService.registerUser(any(RegisterRequest.class)))
                 .thenReturn("User registered successfully");
 
@@ -55,7 +54,6 @@ public class AuthControllerTest {
 
     @Test
     public void testLogin() throws Exception {
-        // Arrange
         LoginRequest loginRequest = LoginRequest.builder()
                 .email("testuser@example.com")
                 .password("test1234")
@@ -68,7 +66,6 @@ public class AuthControllerTest {
         Mockito.when(authService.loginUser(any(LoginRequest.class)))
                 .thenReturn(loginResponse);
 
-        // Act & Assert
         mockMvc.perform(post("/auth/login")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)

@@ -2,13 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -18,11 +19,31 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: 'maven'
 
-      - name: Run tests with coverage
+      # Run unit tests on ALL pushes and PRs
+      - name: Run unit tests
+        run: ./mvnw clean test -Dgroups=UnitTest
+
+      # Run full test suite with coverage on main push or PRs
+      - name: Run all tests with coverage (main)
+        if: github.ref == 'refs/heads/main'
         run: ./mvnw clean verify
 
+      # Upload test coverage to Codecov (main only)
       - name: Upload coverage to Codecov
+        if: github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      # Store test results as artifacts
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+            target/site/jacoco/
