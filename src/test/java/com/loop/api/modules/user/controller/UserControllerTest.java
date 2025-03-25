@@ -1,6 +1,7 @@
 package com.loop.api.modules.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.user.dto.UpdateUserProfileRequest;
 import com.loop.api.modules.user.dto.UserResponse;
@@ -78,14 +79,14 @@ public class UserControllerTest {
 	}
 
 	@Nested
-	@DisplayName("Tests for GET /me")
+	@DisplayName("Tests for get my profile")
 	class GetMyProfileTests {
 		@Test
 		@DisplayName("Should return 200 and user profile when authenticated")
 		void shouldReturnUserProfileWhenAuthenticated() throws Exception {
 			when(userService.getUserById(user.getId())).thenReturn(userResponse);
 
-			mockMvc.perform(get("/users/me")
+			mockMvc.perform(get(ApiRoutes.User.ME)
 							.with(authenticated(userPrincipal)))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.status").value("SUCCESS"))
@@ -105,7 +106,7 @@ public class UserControllerTest {
 			when(userService.getUserById(user.getId()))
 					.thenThrow(new UserNotFoundException("User not found with id: " + user.getId()));
 
-			mockMvc.perform(get("/users/me")
+			mockMvc.perform(get(ApiRoutes.User.ME)
 							.with(authenticated(userPrincipal)))
 					.andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.status").value("ERROR"))
@@ -115,7 +116,7 @@ public class UserControllerTest {
 	}
 
 	@Nested
-	@DisplayName("Tests for PUT /me")
+	@DisplayName("Tests for update my profile")
 	class UpdateMyProfileTests {
 		@Test
 		@DisplayName("Should return 200 and updated profile when valid request is made")
@@ -127,7 +128,7 @@ public class UserControllerTest {
 
 			when(userService.updateUserProfile(eq(user.getId()), any())).thenReturn(userResponse);
 
-			mockMvc.perform(put("/users/me")
+			mockMvc.perform(put(ApiRoutes.User.ME)
 							.with(authenticated(userPrincipal))
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
@@ -144,7 +145,7 @@ public class UserControllerTest {
 			when(userService.updateUserProfile(eq(user.getId()), any()))
 					.thenThrow(new UserNotFoundException("User not found with id: " + user.getId()));
 
-			mockMvc.perform(put("/users/me")
+			mockMvc.perform(put(ApiRoutes.User.ME)
 							.with(authenticated(userPrincipal))
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
@@ -164,7 +165,7 @@ public class UserControllerTest {
 			badRequest.setMobile("123abc");
 			badRequest.setProfileUrl("not-a-url");
 
-			mockMvc.perform(put("/users/me")
+			mockMvc.perform(put(ApiRoutes.User.ME)
 							.with(authenticated(userPrincipal))
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(badRequest)))
@@ -181,14 +182,14 @@ public class UserControllerTest {
 	}
 
 	@Nested
-	@DisplayName("Tests for DELETE /me")
+	@DisplayName("Tests for delete my profile")
 	class DeleteMyAccountTests {
 		@Test
 		@DisplayName("Should delete user and return 200 when authenticated")
 		void shouldDeleteUserSuccessfully() throws Exception {
 			doNothing().when(userService).deleteUser(user.getId());
 
-			mockMvc.perform(delete("/users/me")
+			mockMvc.perform(delete(ApiRoutes.User.ME)
 							.with(authenticated(userPrincipal)))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.status").value("SUCCESS"))
@@ -203,7 +204,7 @@ public class UserControllerTest {
 			doThrow(new UserNotFoundException("User not found with id: " + user.getId()))
 					.when(userService).deleteUser(user.getId());
 
-			mockMvc.perform(delete("/users/me")
+			mockMvc.perform(delete(ApiRoutes.User.ME)
 							.with(authenticated(userPrincipal)))
 					.andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.status").value("ERROR"))

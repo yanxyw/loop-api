@@ -1,5 +1,6 @@
 package com.loop.api.modules.user.controller;
 
+import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.dto.response.ApiResponse;
 import com.loop.api.modules.user.dto.UpdateUserProfileRequest;
 import com.loop.api.modules.user.dto.UserResponse;
@@ -12,7 +13,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/users")
 public class UserController {
 
 	private final UserService userService;
@@ -22,14 +22,14 @@ public class UserController {
 	}
 
 	// Get my profile
-	@GetMapping("/me")
+	@GetMapping(ApiRoutes.User.ME)
 	public ResponseEntity<ApiResponse<UserResponse>> getMyProfile(@AuthenticationPrincipal UserPrincipal userPrincipal) {
 		UserResponse user = userService.getUserById(userPrincipal.getId());
 		return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "User profile fetched", user));
 	}
 
 	// Update my profile
-	@PutMapping("/me")
+	@PutMapping(ApiRoutes.User.ME)
 	public ResponseEntity<ApiResponse<UserResponse>> updateMyProfile(
 			@Valid @RequestBody UpdateUserProfileRequest profileRequest,
 			@AuthenticationPrincipal UserPrincipal userPrincipal) {
@@ -38,7 +38,7 @@ public class UserController {
 	}
 
 	// Delete my account
-	@DeleteMapping("/me")
+	@DeleteMapping(ApiRoutes.User.ME)
 	public ResponseEntity<ApiResponse<Void>> deleteMyAccount(@AuthenticationPrincipal UserPrincipal userPrincipal) {
 		userService.deleteUser(userPrincipal.getId());
 		return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "User deleted successfully", null));

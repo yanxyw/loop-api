@@ -1,5 +1,6 @@
 package com.loop.api.modules.user.controller;
 
+import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.dto.response.ApiResponse;
 import com.loop.api.modules.user.dto.UserResponse;
 import com.loop.api.modules.user.service.UserService;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/users")
+@RequestMapping(ApiRoutes.Admin.USERS)
 public class AdminUserController {
 
 	private final UserService userService;

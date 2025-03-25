@@ -1,6 +1,7 @@
 package com.loop.api.modules.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.exception.InvalidCredentialsException;
 import com.loop.api.common.exception.UserAlreadyExistsException;
 import com.loop.api.common.exception.UserNotFoundException;
@@ -42,7 +43,7 @@ public class AuthControllerTest {
 	private AuthService authService;
 
 	@Nested
-	@DisplayName("Tests for /signup")
+	@DisplayName("Tests for sign up")
 	class RegisterTests {
 		@Test
 		@DisplayName("Signup: should register user successfully")
@@ -52,7 +53,7 @@ public class AuthControllerTest {
 			when(authService.registerUser(any(RegisterRequest.class)))
 					.thenReturn("User registered successfully");
 
-			mockMvc.perform(post("/auth/signup")
+			mockMvc.perform(post(ApiRoutes.Auth.SIGNUP)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isCreated())
@@ -70,7 +71,7 @@ public class AuthControllerTest {
 			when(authService.registerUser(any(RegisterRequest.class)))
 					.thenThrow(new UserAlreadyExistsException("User with email 'exists@example.com' already exists."));
 
-			mockMvc.perform(post("/auth/signup")
+			mockMvc.perform(post(ApiRoutes.Auth.SIGNUP)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isConflict())
@@ -84,7 +85,7 @@ public class AuthControllerTest {
 		void shouldReturnBadRequestForMissingFields() throws Exception {
 			RegisterRequest request = new RegisterRequest(); // all fields null
 
-			mockMvc.perform(post("/auth/signup")
+			mockMvc.perform(post(ApiRoutes.Auth.SIGNUP)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isBadRequest())
@@ -102,7 +103,7 @@ public class AuthControllerTest {
 		void shouldFailForInvalidEmail(String invalidEmail) throws Exception {
 			RegisterRequest req = new RegisterRequest(invalidEmail, "password123", "validUsername");
 
-			mockMvc.perform(post("/auth/signup")
+			mockMvc.perform(post(ApiRoutes.Auth.SIGNUP)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(req)))
 					.andExpect(status().isBadRequest())
@@ -117,7 +118,7 @@ public class AuthControllerTest {
 		void shouldFailForShortPassword() throws Exception {
 			RegisterRequest req = new RegisterRequest("user@example.com", "123", "validUsername");
 
-			mockMvc.perform(post("/auth/signup")
+			mockMvc.perform(post(ApiRoutes.Auth.SIGNUP)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(req)))
 					.andExpect(status().isBadRequest())
@@ -132,7 +133,7 @@ public class AuthControllerTest {
 		void shouldFailForInvalidUsername() throws Exception {
 			RegisterRequest req = new RegisterRequest("user@example.com", "password123", "<script>");
 
-			mockMvc.perform(post("/auth/signup")
+			mockMvc.perform(post(ApiRoutes.Auth.SIGNUP)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(req)))
 					.andExpect(status().isBadRequest())
@@ -151,7 +152,7 @@ public class AuthControllerTest {
 			when(authService.registerUser(any(RegisterRequest.class)))
 					.thenThrow(new RuntimeException("An unexpected error occurred"));
 
-			mockMvc.perform(post("/auth/signup")
+			mockMvc.perform(post(ApiRoutes.Auth.SIGNUP)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isInternalServerError())
@@ -162,7 +163,7 @@ public class AuthControllerTest {
 	}
 
 	@Nested
-	@DisplayName("Tests for /login")
+	@DisplayName("Tests for login")
 	class LoginTests {
 		@Test
 		@DisplayName("Login: should authenticate user and return token")
@@ -173,7 +174,7 @@ public class AuthControllerTest {
 			when(authService.loginUser(any(LoginRequest.class)))
 					.thenReturn(loginResponse);
 
-			mockMvc.perform(post("/auth/login")
+			mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(loginRequest)))
 					.andExpect(status().isOk())
@@ -188,7 +189,7 @@ public class AuthControllerTest {
 		void shouldReturnBadRequestIfFieldsAreMissing() throws Exception {
 			LoginRequest request = new LoginRequest("invalid", null);
 
-			mockMvc.perform(post("/auth/login")
+			mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isBadRequest())
@@ -204,7 +205,7 @@ public class AuthControllerTest {
 		void shouldFailLoginValidation() throws Exception {
 			LoginRequest req = new LoginRequest("", "123");
 
-			mockMvc.perform(post("/auth/login")
+			mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(req)))
 					.andExpect(status().isBadRequest())
@@ -220,7 +221,7 @@ public class AuthControllerTest {
 			when(authService.loginUser(any(LoginRequest.class)))
 					.thenThrow(new UserNotFoundException("No account found with this email"));
 
-			mockMvc.perform(post("/auth/login")
+			mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isNotFound())
@@ -237,7 +238,7 @@ public class AuthControllerTest {
 			when(authService.loginUser(any(LoginRequest.class)))
 					.thenThrow(new InvalidCredentialsException("Invalid email or password"));
 
-			mockMvc.perform(post("/auth/login")
+			mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isUnauthorized())
@@ -254,7 +255,7 @@ public class AuthControllerTest {
 			when(authService.loginUser(any(LoginRequest.class)))
 					.thenThrow(new RuntimeException("An unexpected error occurred"));
 
-			mockMvc.perform(post("/auth/login")
+			mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isInternalServerError())

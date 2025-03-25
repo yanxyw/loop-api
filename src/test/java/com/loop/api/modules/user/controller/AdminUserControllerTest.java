@@ -1,6 +1,7 @@
 package com.loop.api.modules.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.modules.user.dto.UserResponse;
 import com.loop.api.modules.user.service.UserService;
 import org.junit.jupiter.api.*;
@@ -51,7 +52,7 @@ public class AdminUserControllerTest {
 		void shouldReturnAllUsers() throws Exception {
 			when(userService.getAllUsers()).thenReturn(mockUsers);
 
-			mockMvc.perform(get("/admin/users")
+			mockMvc.perform(get(ApiRoutes.Admin.USERS)
 							.contentType(MediaType.APPLICATION_JSON))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.status").value("SUCCESS"))
@@ -68,7 +69,7 @@ public class AdminUserControllerTest {
 		void shouldReturnEmptyList() throws Exception {
 			when(userService.getAllUsers()).thenReturn(List.of());
 
-			mockMvc.perform(get("/admin/users")
+			mockMvc.perform(get(ApiRoutes.Admin.USERS)
 							.contentType(MediaType.APPLICATION_JSON))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.status").value("SUCCESS"))
