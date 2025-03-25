@@ -30,7 +30,7 @@ public class AuthService {
 	public String registerUser(RegisterRequest request) {
 		UserValidationUtil.validateUniqueUserFields(
 				request.getEmail(), request.getUsername(), null, userRepository, null);
-		
+
 		try {
 			User user = new User();
 			user.setEmail(request.getEmail());
@@ -45,10 +45,6 @@ public class AuthService {
 	}
 
 	public LoginResponse loginUser(LoginRequest request) {
-		if (request.getEmail() == null || request.getPassword() == null) {
-			throw new IllegalArgumentException("Email and password cannot be null");
-		}
-
 		try {
 			Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
 

@@ -5,13 +5,10 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public class ApiResponse<T> {
-	private Status status;
-	private int code;
-	private String message;
-	private T data;
-
-	public ApiResponse() {
-	}
+	private final Status status;
+	private final int code;
+	private final String message;
+	private final T data;
 
 	public ApiResponse(Status status, int code, String message, T data) {
 		this.status = status;

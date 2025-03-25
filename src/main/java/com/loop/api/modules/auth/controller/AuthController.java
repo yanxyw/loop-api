@@ -33,7 +33,7 @@ public class AuthController {
 	}
 
 	@PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
+	public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
 		LoginResponse response = authService.loginUser(request);
 		return ResponseEntity
 				.ok(ApiResponse.success(HttpStatus.OK, "Login successful", response));

@@ -167,7 +167,7 @@ public class AuthControllerTest {
 		@Test
 		@DisplayName("Login: should authenticate user and return token")
 		void shouldLoginSuccessfully() throws Exception {
-			LoginRequest loginRequest = new LoginRequest("test@example.com", "test123");
+			LoginRequest loginRequest = new LoginRequest("test@example.com", "test1234");
 			LoginResponse loginResponse = new LoginResponse("abc123");
 
 			when(authService.loginUser(any(LoginRequest.class)))
@@ -184,12 +184,9 @@ public class AuthControllerTest {
 		}
 
 		@Test
-		@DisplayName("Should return 400 if email or password is null")
+		@DisplayName("Should return 400 if email or password is missing")
 		void shouldReturnBadRequestIfFieldsAreMissing() throws Exception {
-			LoginRequest request = new LoginRequest(null, "password");
-
-			when(authService.loginUser(any(LoginRequest.class)))
-					.thenThrow(new IllegalArgumentException("Email and password cannot be null"));
+			LoginRequest request = new LoginRequest("invalid", null);
 
 			mockMvc.perform(post("/auth/login")
 							.contentType(MediaType.APPLICATION_JSON)
@@ -197,7 +194,22 @@ public class AuthControllerTest {
 					.andExpect(status().isBadRequest())
 					.andExpect(jsonPath("$.status").value("ERROR"))
 					.andExpect(jsonPath("$.code").value(400))
-					.andExpect(jsonPath("$.message").value("Email and password cannot be null"));
+					.andExpect(jsonPath("$.message").value("Validation failed"))
+					.andExpect(jsonPath("$.data.email").value("Email format is invalid"))
+					.andExpect(jsonPath("$.data.password").value("Password is required"));
+		}
+
+		@Test
+		@DisplayName("Should return 400 if login request is missing fields")
+		void shouldFailLoginValidation() throws Exception {
+			LoginRequest req = new LoginRequest("", "123");
+
+			mockMvc.perform(post("/auth/login")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(req)))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.data.email").value("Email is required"))
+					.andExpect(jsonPath("$.data.password").value("Password must be at least 8 characters"));
 		}
 
 		@Test

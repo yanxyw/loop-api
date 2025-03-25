@@ -124,22 +124,6 @@ public class AuthServiceTest {
 			}
 
 			@Test
-			@DisplayName("Should throw IllegalArgumentException if email is null")
-			void shouldThrowIfEmailIsNull() {
-				LoginRequest request = new LoginRequest(null, "password");
-
-				assertThrows(IllegalArgumentException.class, () -> authService.loginUser(request));
-			}
-
-			@Test
-			@DisplayName("Should throw IllegalArgumentException if password is null")
-			void shouldThrowIfPasswordIsNull() {
-				LoginRequest request = new LoginRequest("user@example.com", null);
-
-				assertThrows(IllegalArgumentException.class, () -> authService.loginUser(request));
-			}
-
-			@Test
 			@DisplayName("Should throw UserNotFoundException if user does not exist")
 			void shouldThrowIfUserNotFound() {
 				LoginRequest request = new LoginRequest("notfound@example.com", "password");
