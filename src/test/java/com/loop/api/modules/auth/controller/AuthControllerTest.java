@@ -1,7 +1,9 @@
 package com.loop.api.modules.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.loop.api.common.exception.InvalidCredentialsException;
 import com.loop.api.common.exception.UserAlreadyExistsException;
+import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
@@ -43,8 +45,7 @@ public class AuthControllerTest {
 		@Test
 		@DisplayName("Signup: should register user successfully")
 		void shouldRegisterUserSuccessfully() throws Exception {
-			RegisterRequest request = new RegisterRequest("test@example.comr", "password",
-					"newuser");
+			RegisterRequest request = new RegisterRequest("test@example.comr", "password", "newuser");
 
 			when(authService.registerUser(any(RegisterRequest.class)))
 					.thenReturn("User registered successfully");
@@ -66,8 +67,7 @@ public class AuthControllerTest {
 					"existinguser");
 
 			when(authService.registerUser(any(RegisterRequest.class)))
-					.thenThrow(new UserAlreadyExistsException("User with email 'exists@example" +
-							".com' already exists."));
+					.thenThrow(new UserAlreadyExistsException("User with email 'exists@example.com' already exists."));
 
 			mockMvc.perform(post("/auth/signup")
 							.contentType(MediaType.APPLICATION_JSON)
@@ -84,8 +84,7 @@ public class AuthControllerTest {
 			RegisterRequest request = new RegisterRequest();
 
 			when(authService.registerUser(any(RegisterRequest.class)))
-					.thenThrow(new IllegalArgumentException("Email, username, and password cannot " +
-							"be empty or null"));
+					.thenThrow(new IllegalArgumentException("Email, username, and password cannot be empty or null"));
 
 			mockMvc.perform(post("/auth/signup")
 							.contentType(MediaType.APPLICATION_JSON)
@@ -100,8 +99,7 @@ public class AuthControllerTest {
 		@Test
 		@DisplayName("Should return 500 if unexpected error occurs")
 		void shouldReturnInternalServerErrorForUnexpectedError() throws Exception {
-			RegisterRequest request = new RegisterRequest("new@example.com", "password",
-					"newuser");
+			RegisterRequest request = new RegisterRequest("new@example.com", "password", "newuser");
 
 			when(authService.registerUser(any(RegisterRequest.class)))
 					.thenThrow(new RuntimeException("An unexpected error occurred"));
@@ -136,6 +134,74 @@ public class AuthControllerTest {
 					.andExpect(jsonPath("$.code").value(200))
 					.andExpect(jsonPath("$.message").value("Login successful"))
 					.andExpect(jsonPath("$.data.token").value("abc123"));
+		}
+
+		@Test
+		@DisplayName("Should return 400 if email or password is null")
+		void shouldReturnBadRequestIfFieldsAreMissing() throws Exception {
+			LoginRequest request = new LoginRequest(null, "password");
+
+			when(authService.loginUser(any(LoginRequest.class)))
+					.thenThrow(new IllegalArgumentException("Email and password cannot be null"));
+
+			mockMvc.perform(post("/auth/login")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(400))
+					.andExpect(jsonPath("$.message").value("Email and password cannot be null"));
+		}
+
+		@Test
+		@DisplayName("Should return 404 if user not found")
+		void shouldReturnNotFoundIfUserNotFound() throws Exception {
+			LoginRequest request = new LoginRequest("unknown@example.com", "password");
+
+			when(authService.loginUser(any(LoginRequest.class)))
+					.thenThrow(new UserNotFoundException("No account found with this email"));
+
+			mockMvc.perform(post("/auth/login")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isNotFound())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(404))
+					.andExpect(jsonPath("$.message").value("No account found with this email"));
+		}
+
+		@Test
+		@DisplayName("Should return 401 if password is incorrect")
+		void shouldReturnUnauthorizedIfPasswordIncorrect() throws Exception {
+			LoginRequest request = new LoginRequest("test@example.com", "wrongpassword");
+
+			when(authService.loginUser(any(LoginRequest.class)))
+					.thenThrow(new InvalidCredentialsException("Invalid email or password"));
+
+			mockMvc.perform(post("/auth/login")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(401))
+					.andExpect(jsonPath("$.message").value("Invalid email or password"));
+		}
+
+		@Test
+		@DisplayName("Should return 500 if unexpected error occurs")
+		void shouldReturnInternalServerErrorWhenUnexpectedExceptionOccurs() throws Exception {
+			LoginRequest request = new LoginRequest("test@example.com", "password");
+
+			when(authService.loginUser(any(LoginRequest.class)))
+					.thenThrow(new RuntimeException("An unexpected error occurred"));
+
+			mockMvc.perform(post("/auth/login")  // use BASE_PATH if you have it
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isInternalServerError())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(500))
+					.andExpect(jsonPath("$.message").value("An unexpected error occurred"));
 		}
 	}
 }
