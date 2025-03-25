@@ -17,61 +17,59 @@ import java.util.List;
 @Transactional
 public class UserService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final UserMapper userMapper;
+	private final UserRepository userRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final UserMapper userMapper;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       UserMapper userMapper) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.userMapper = userMapper;
-    }
+	public UserService(UserRepository userRepository,
+					   PasswordEncoder passwordEncoder,
+					   UserMapper userMapper) {
+		this.userRepository = userRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.userMapper = userMapper;
+	}
 
-    public List<UserResponse> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return userMapper.toUserResponseList(users);
-    }
+	public List<UserResponse> getAllUsers() {
+		List<User> users = userRepository.findAll();
+		return userMapper.toUserResponseList(users);
+	}
 
-    public UserResponse getUserById(Long id) {
-        User user = getUserEntityById(id);
-        return userMapper.toUserResponse(user);
-    }
+	public UserResponse getUserById(Long id) {
+		User user = getUserEntityById(id);
+		return userMapper.toUserResponse(user);
+	}
 
-    public User getUserEntityById(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
-    }
+	public User getUserEntityById(Long id) {
+		return userRepository.findById(id)
+				.orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
+	}
 
-    public UserResponse createUser(User user) {
-        UserValidationUtil.validateNewUser(user.getEmail(), user.getUsername(), user.getPassword(), user.getMobile(), userRepository);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return userMapper.toUserResponse(userRepository.save(user));
-    }
+	public UserResponse updateUserProfile(Long id, UpdateUserProfileRequest profileRequest) {
+		User existingUser = getUserEntityById(id);
 
-    public UserResponse updateUserProfile(Long id, UpdateUserProfileRequest profileRequest) {
-        User existingUser = getUserEntityById(id);
+		UserValidationUtil.validateUniqueUserFields(
+				profileRequest.getEmail(),
+				profileRequest.getUsername(),
+				profileRequest.getMobile(),
+				userRepository,
+				id
+		);
 
-        UserValidationUtil.validateUniqueUserFields(
-                profileRequest.getEmail(),
-                profileRequest.getUsername(),
-                profileRequest.getMobile(),
-                userRepository,
-                id
-        );
+		if (profileRequest.getEmail() != null)
+			existingUser.setEmail(profileRequest.getEmail());
+		if (profileRequest.getMobile() != null)
+			existingUser.setMobile(profileRequest.getMobile());
+		if (profileRequest.getUsername() != null)
+			existingUser.setUsername(profileRequest.getUsername());
+		if (profileRequest.getProfileUrl() != null)
+			existingUser.setProfileUrl(profileRequest.getProfileUrl());
 
-        if (profileRequest.getEmail() != null) existingUser.setEmail(profileRequest.getEmail());
-        if (profileRequest.getMobile() != null) existingUser.setMobile(profileRequest.getMobile());
-        if (profileRequest.getUsername() != null) existingUser.setUsername(profileRequest.getUsername());
-        if (profileRequest.getProfileUrl() != null) existingUser.setProfileUrl(profileRequest.getProfileUrl());
+		return userMapper.toUserResponse(userRepository.save(existingUser));
+	}
 
-        return userMapper.toUserResponse(userRepository.save(existingUser));
-    }
-
-    public void deleteUser(Long id) {
-        User user = getUserEntityById(id);
-        userRepository.delete(user);
-    }
+	public void deleteUser(Long id) {
+		User user = getUserEntityById(id);
+		userRepository.delete(user);
+	}
 }
 

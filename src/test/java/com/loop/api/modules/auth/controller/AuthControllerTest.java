@@ -12,6 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -80,10 +82,7 @@ public class AuthControllerTest {
 		@Test
 		@DisplayName("Should return 400 Bad Request if fields are missing")
 		void shouldReturnBadRequestForMissingFields() throws Exception {
-			RegisterRequest request = new RegisterRequest();
-
-			when(authService.registerUser(any(RegisterRequest.class)))
-					.thenThrow(new IllegalArgumentException("Email, username, and password cannot be empty or null"));
+			RegisterRequest request = new RegisterRequest(); // all fields null
 
 			mockMvc.perform(post("/auth/signup")
 							.contentType(MediaType.APPLICATION_JSON)
@@ -91,9 +90,58 @@ public class AuthControllerTest {
 					.andExpect(status().isBadRequest())
 					.andExpect(jsonPath("$.status").value("ERROR"))
 					.andExpect(jsonPath("$.code").value(400))
-					.andExpect(jsonPath("$.message").value("Email, username, and password cannot be empty or null"));
+					.andExpect(jsonPath("$.message").value("Validation failed"))
+					.andExpect(jsonPath("$.data.email").value("Email is required"))
+					.andExpect(jsonPath("$.data.username").value("Username is required"))
+					.andExpect(jsonPath("$.data.password").value("Password is required"));
 		}
 
+		@ParameterizedTest
+		@ValueSource(strings = {"not-an-email", "user@invalid", "a@b", "user@.com"})
+		@DisplayName("Should return 400 for invalid email format")
+		void shouldFailForInvalidEmail(String invalidEmail) throws Exception {
+			RegisterRequest req = new RegisterRequest(invalidEmail, "password123", "validUsername");
+
+			mockMvc.perform(post("/auth/signup")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(req)))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(400))
+					.andExpect(jsonPath("$.message").value("Validation failed"))
+					.andExpect(jsonPath("$.data.email").value("Email format is invalid"));
+		}
+
+		@Test
+		@DisplayName("Should return 400 for short password")
+		void shouldFailForShortPassword() throws Exception {
+			RegisterRequest req = new RegisterRequest("user@example.com", "123", "validUsername");
+
+			mockMvc.perform(post("/auth/signup")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(req)))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(400))
+					.andExpect(jsonPath("$.message").value("Validation failed"))
+					.andExpect(jsonPath("$.data.password").value("Password must be at least 8 characters"));
+		}
+
+		@Test
+		@DisplayName("Should return 400 for invalid username characters")
+		void shouldFailForInvalidUsername() throws Exception {
+			RegisterRequest req = new RegisterRequest("user@example.com", "password123", "<script>");
+
+			mockMvc.perform(post("/auth/signup")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(req)))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(400))
+					.andExpect(jsonPath("$.message").value("Validation failed"))
+					.andExpect(jsonPath("$.data.username").value("Username can only contain letters, numbers and " +
+							"underscores"));
+		}
 
 		@Test
 		@DisplayName("Should return 500 if unexpected error occurs")
@@ -194,7 +242,7 @@ public class AuthControllerTest {
 			when(authService.loginUser(any(LoginRequest.class)))
 					.thenThrow(new RuntimeException("An unexpected error occurred"));
 
-			mockMvc.perform(post("/auth/login")  // use BASE_PATH if you have it
+			mockMvc.perform(post("/auth/login")
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(request)))
 					.andExpect(status().isInternalServerError())

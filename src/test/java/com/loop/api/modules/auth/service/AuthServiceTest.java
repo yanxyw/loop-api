@@ -57,17 +57,6 @@ public class AuthServiceTest {
 		}
 
 		@Test
-		@DisplayName("Should throw IllegalArgumentException when required fields are missing")
-		void shouldThrowIllegalArgumentExceptionForMissingFields() {
-			RegisterRequest request = new RegisterRequest();
-
-			IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-					() -> authService.registerUser(request));
-
-			assertEquals("Email, username, and password cannot be empty or null", ex.getMessage());
-		}
-
-		@Test
 		@DisplayName("Should throw UserAlreadyExistsException when email already exists")
 		void shouldThrowUserAlreadyExistsExceptionIfEmailExists() {
 			RegisterRequest request = new RegisterRequest("exists@example.com", "password", "existinguser");
