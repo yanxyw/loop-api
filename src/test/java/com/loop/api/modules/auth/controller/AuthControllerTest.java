@@ -36,10 +36,11 @@ public class AuthControllerTest {
     @MockitoBean
     private AuthService authService;
 
+    // Tests for /signup
     @Test
     @DisplayName("Signup: should register user successfully")
     void shouldRegisterUserSuccessfully() throws Exception {
-        RegisterRequest request = new RegisterRequest("testuser", "test@example.com", "test123");
+        RegisterRequest request = new RegisterRequest("test@example.comr", "password", "newuser");
 
         when(authService.registerUser(any(RegisterRequest.class)))
                 .thenReturn("User registered successfully");
@@ -55,28 +56,9 @@ public class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("Login: should authenticate user and return token")
-    void shouldLoginSuccessfully() throws Exception {
-        LoginRequest loginRequest = new LoginRequest("test@example.com", "test123");
-        LoginResponse loginResponse = new LoginResponse("abc123");
-
-        when(authService.loginUser(any(LoginRequest.class)))
-                .thenReturn(loginResponse);
-
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("SUCCESS"))
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("Login successful"))
-                .andExpect(jsonPath("$.data.token").value("abc123"));
-    }
-
-    @Test
     @DisplayName("Should return 409 Conflict if user already exists")
     void shouldReturnConflictIfUserExists() throws Exception {
-        RegisterRequest request = new RegisterRequest("exists@example.com", "existinguser", "password");
+        RegisterRequest request = new RegisterRequest("exists@example.com", "password", "existinguser");
 
         when(authService.registerUser(any(RegisterRequest.class)))
                 .thenThrow(new UserAlreadyExistsException("User with email 'exists@example.com' already exists."));
@@ -110,7 +92,7 @@ public class AuthControllerTest {
     @Test
     @DisplayName("Should return 500 if unexpected error occurs")
     void shouldReturnInternalServerErrorForUnexpectedError() throws Exception {
-        RegisterRequest request = new RegisterRequest("new@example.com","newuser","password");
+        RegisterRequest request = new RegisterRequest("new@example.com","password","newuser");
 
         when(authService.registerUser(any(RegisterRequest.class)))
                 .thenThrow(new RuntimeException("An unexpected error occurred"));
@@ -122,5 +104,26 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.status").value("ERROR"))
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
+    }
+
+    // Tests for /login
+
+    @Test
+    @DisplayName("Login: should authenticate user and return token")
+    void shouldLoginSuccessfully() throws Exception {
+        LoginRequest loginRequest = new LoginRequest("test@example.com", "test123");
+        LoginResponse loginResponse = new LoginResponse("abc123");
+
+        when(authService.loginUser(any(LoginRequest.class)))
+                .thenReturn(loginResponse);
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("Login successful"))
+                .andExpect(jsonPath("$.data.token").value("abc123"));
     }
 }
