@@ -147,6 +147,47 @@ public class UserServiceTest {
 		}
 
 		@Test
+		@DisplayName("Should update only email when other fields are null")
+		void shouldUpdateOnlyEmail() {
+			User existingUser = TestUserFactory.regularUser(1L);
+			UpdateUserProfileRequest request = new UpdateUserProfileRequest();
+			request.setEmail("updated@example.com");
+
+			User updatedUser = TestUserFactory.regularUser(1L);
+			updatedUser.setEmail(request.getEmail());
+
+			UserResponse expected = TestUserResponseFactory.fromUser(updatedUser);
+
+			when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+			when(userRepository.save(any(User.class))).thenReturn(updatedUser);
+			when(userMapper.toUserResponse(updatedUser)).thenReturn(expected);
+
+			UserResponse result = userService.updateUserProfile(1L, request);
+
+			assertEquals(expected.getEmail(), result.getEmail());
+			verify(userRepository).save(existingUser);
+		}
+
+		@Test
+		@DisplayName("Should skip updates if all fields are null")
+		void shouldNotUpdateIfNoFieldsProvided() {
+			User existingUser = TestUserFactory.regularUser(1L);
+			UpdateUserProfileRequest request = new UpdateUserProfileRequest();
+
+			UserResponse expected = TestUserResponseFactory.fromUser(existingUser);
+
+			when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+			when(userRepository.save(any(User.class))).thenReturn(existingUser);
+			when(userMapper.toUserResponse(existingUser)).thenReturn(expected);
+
+			UserResponse result = userService.updateUserProfile(1L, request);
+
+			assertEquals(expected.getEmail(), result.getEmail());
+			assertEquals(expected.getUsername(), result.getUsername());
+			verify(userRepository).save(existingUser);
+		}
+
+		@Test
 		@DisplayName("Should throw UserNotFoundException when user does not exist")
 		void shouldThrowIfUserNotFound() {
 			when(userRepository.findById(1L)).thenReturn(Optional.empty());
