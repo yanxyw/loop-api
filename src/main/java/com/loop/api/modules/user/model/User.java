@@ -10,30 +10,30 @@ import lombok.ToString;
 @Setter
 @ToString(exclude = "password")
 @Table(name = "users", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "email"),
-        @UniqueConstraint(columnNames = "mobile"),
-        @UniqueConstraint(columnNames = "username")
+		@UniqueConstraint(columnNames = "email"),
+		@UniqueConstraint(columnNames = "mobile"),
+		@UniqueConstraint(columnNames = "username")
 })
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+	@Column(nullable = false, unique = true)
+	private String email;
 
-    @Column(unique = true)
-    private String mobile;
+	@Column(unique = true)
+	private String mobile;
 
-    @Column(nullable = false)
-    private String password;
+	@Column(nullable = false)
+	private String password;
 
-    @Column(nullable = false, unique = true)
-    private String username;
+	@Column(nullable = false, unique = true)
+	private String username;
 
-    @Column(nullable = false)
-    private boolean admin = false;
+	@Column(nullable = false)
+	private boolean admin = false;
 
-    @Column
-    private String profileUrl;
+	@Column
+	private String profileUrl;
 }
