@@ -7,7 +7,6 @@ import com.loop.api.modules.user.dto.UserResponse;
 import com.loop.api.modules.user.mapper.UserMapper;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +19,7 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final UserMapper userMapper;
 
-	public UserService(UserRepository userRepository,
-					   PasswordEncoder passwordEncoder,
-					   UserMapper userMapper) {
+	public UserService(UserRepository userRepository, UserMapper userMapper) {
 		this.userRepository = userRepository;
 		this.userMapper = userMapper;
 	}

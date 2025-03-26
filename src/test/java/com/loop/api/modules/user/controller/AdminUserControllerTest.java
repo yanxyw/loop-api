@@ -1,6 +1,5 @@
 package com.loop.api.modules.user.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.user.dto.UserResponse;
@@ -30,9 +29,6 @@ public class AdminUserControllerTest {
 
 	@MockitoBean
 	private UserService userService;
-
-	@Autowired
-	private ObjectMapper objectMapper;
 
 	private List<UserResponse> mockUsers;
 
@@ -158,5 +154,4 @@ public class AdminUserControllerTest {
 					.andExpect(jsonPath("$.message").value("User not found with id: " + missingId));
 		}
 	}
-
 }
