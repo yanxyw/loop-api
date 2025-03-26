@@ -8,6 +8,8 @@ import com.loop.api.modules.user.dto.UserResponse;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.service.UserService;
 import com.loop.api.security.UserPrincipal;
+import com.loop.api.testutils.TestUserFactory;
+import com.loop.api.testutils.TestUserResponseFactory;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -32,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
 public class UserControllerTest {
+
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -47,22 +50,8 @@ public class UserControllerTest {
 
 	@BeforeEach
 	void setUp() {
-		user = new User();
-		user.setId(1L);
-		user.setEmail("test@example.com");
-		user.setUsername("testuser");
-		user.setMobile("1234567890");
-		user.setProfileUrl("http://example.com/avatar.png");
-		user.setAdmin(false);
-
-		userResponse = new UserResponse();
-		userResponse.setId(user.getId());
-		userResponse.setEmail(user.getEmail());
-		userResponse.setUsername(user.getUsername());
-		userResponse.setMobile(user.getMobile());
-		userResponse.setProfileUrl(user.getProfileUrl());
-		userResponse.setAdmin(user.isAdmin());
-
+		user = TestUserFactory.regularUser(1L);
+		userResponse = TestUserResponseFactory.fromUser(user);
 		userPrincipal = new UserPrincipal(user);
 	}
 
@@ -81,6 +70,7 @@ public class UserControllerTest {
 	@Nested
 	@DisplayName("Tests for get my profile")
 	class GetMyProfileTests {
+
 		@Test
 		@DisplayName("Should return 200 and user profile when authenticated")
 		void shouldReturnUserProfileWhenAuthenticated() throws Exception {
@@ -118,6 +108,7 @@ public class UserControllerTest {
 	@Nested
 	@DisplayName("Tests for update my profile")
 	class UpdateMyProfileTests {
+
 		@Test
 		@DisplayName("Should return 200 and updated profile when valid request is made")
 		void shouldUpdateProfileSuccessfully() throws Exception {
@@ -155,7 +146,6 @@ public class UserControllerTest {
 					.andExpect(jsonPath("$.message").value("User not found with id: " + user.getId()));
 		}
 
-
 		@Test
 		@DisplayName("Should return 400 with invalid fields")
 		void shouldReturnBadRequestOnValidationFailure() throws Exception {
@@ -184,6 +174,7 @@ public class UserControllerTest {
 	@Nested
 	@DisplayName("Tests for delete my profile")
 	class DeleteMyAccountTests {
+
 		@Test
 		@DisplayName("Should delete user and return 200 when authenticated")
 		void shouldDeleteUserSuccessfully() throws Exception {

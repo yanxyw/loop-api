@@ -3,7 +3,10 @@ package com.loop.api.modules.user.controller;
 import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.user.dto.UserResponse;
+import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.service.UserService;
+import com.loop.api.testutils.TestUserFactory;
+import com.loop.api.testutils.TestUserResponseFactory;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -24,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(AdminUserController.class)
 @AutoConfigureMockMvc(addFilters = false)
 public class AdminUserControllerTest {
+
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -31,20 +35,24 @@ public class AdminUserControllerTest {
 	private UserService userService;
 
 	private List<UserResponse> mockUsers;
+	private UserResponse user1;
+	private UserResponse user2;
 
 	@BeforeEach
 	void setUp() {
-		UserResponse user1 = new UserResponse(1L, "alice@example.com", "1234567890", "alice", false, "http://example" +
-				".com/alice.png");
-		UserResponse user2 = new UserResponse(2L, "bob@example.com", "0987654321", "bob", true, "http://example" +
-				".com/bob.png"
-		);
+		User u1 = TestUserFactory.regularUser(1L);
+		User u2 = TestUserFactory.adminUser(2L);
+
+		user1 = TestUserResponseFactory.fromUser(u1);
+		user2 = TestUserResponseFactory.fromUser(u2);
+
 		mockUsers = List.of(user1, user2);
 	}
 
 	@Nested
 	@DisplayName("Tests for get all users")
 	class GetAllUsersTest {
+
 		@Test
 		@DisplayName("Should return 200 and list of all users for admin")
 		void shouldReturnAllUsers() throws Exception {
@@ -58,8 +66,8 @@ public class AdminUserControllerTest {
 					.andExpect(jsonPath("$.message").value("Fetched all users"))
 					.andExpect(jsonPath("$.data").isArray())
 					.andExpect(jsonPath("$.data.length()").value(2))
-					.andExpect(jsonPath("$.data[0].email").value("alice@example.com"))
-					.andExpect(jsonPath("$.data[1].username").value("bob"));
+					.andExpect(jsonPath("$.data[0].email").value(user1.getEmail()))
+					.andExpect(jsonPath("$.data[1].username").value(user2.getUsername()));
 		}
 
 		@Test
@@ -80,13 +88,13 @@ public class AdminUserControllerTest {
 	@Nested
 	@DisplayName("Tests for get user by ID")
 	class GetUserByIdTest {
+
 		@Test
 		@DisplayName("Should return 200 and user details when user exists")
 		void shouldReturnUserById() throws Exception {
-			UserResponse user = mockUsers.getFirst();
-			Long userId = user.getId();
+			Long userId = user1.getId();
 
-			when(userService.getUserById(userId)).thenReturn(user);
+			when(userService.getUserById(userId)).thenReturn(user1);
 
 			mockMvc.perform(get(ApiRoutes.Admin.USERS + "/" + userId)
 							.contentType(MediaType.APPLICATION_JSON))
@@ -94,18 +102,19 @@ public class AdminUserControllerTest {
 					.andExpect(jsonPath("$.status").value("SUCCESS"))
 					.andExpect(jsonPath("$.code").value(200))
 					.andExpect(jsonPath("$.message").value("User fetched"))
-					.andExpect(jsonPath("$.data.id").value(user.getId()))
-					.andExpect(jsonPath("$.data.email").value(user.getEmail()))
-					.andExpect(jsonPath("$.data.username").value(user.getUsername()))
-					.andExpect(jsonPath("$.data.mobile").value(user.getMobile()))
-					.andExpect(jsonPath("$.data.admin").value(user.isAdmin()))
-					.andExpect(jsonPath("$.data.profileUrl").value(user.getProfileUrl()));
+					.andExpect(jsonPath("$.data.id").value(user1.getId()))
+					.andExpect(jsonPath("$.data.email").value(user1.getEmail()))
+					.andExpect(jsonPath("$.data.username").value(user1.getUsername()))
+					.andExpect(jsonPath("$.data.mobile").value(user1.getMobile()))
+					.andExpect(jsonPath("$.data.admin").value(user1.isAdmin()))
+					.andExpect(jsonPath("$.data.profileUrl").value(user1.getProfileUrl()));
 		}
 
 		@Test
 		@DisplayName("Should return 404 if user does not exist")
 		void shouldReturnNotFoundIfUserMissing() throws Exception {
 			Long missingId = 999L;
+
 			when(userService.getUserById(missingId))
 					.thenThrow(new UserNotFoundException("User not found with id: " + missingId));
 
@@ -125,7 +134,7 @@ public class AdminUserControllerTest {
 		@Test
 		@DisplayName("Should delete user and return 200 when user exists")
 		void shouldDeleteUserSuccessfully() throws Exception {
-			Long userId = mockUsers.getFirst().getId();
+			Long userId = user1.getId();
 
 			doNothing().when(userService).deleteUser(userId);
 
