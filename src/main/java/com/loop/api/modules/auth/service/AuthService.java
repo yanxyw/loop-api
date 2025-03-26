@@ -9,22 +9,28 @@ import com.loop.api.modules.auth.dto.RegisterRequest;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import com.loop.api.security.JwtTokenProvider;
+import com.loop.api.security.UserPrincipal;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 public class AuthService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final AuthenticationManager authenticationManager;
 
 	public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-					   JwtTokenProvider jwtTokenProvider) {
+					   JwtTokenProvider jwtTokenProvider, AuthenticationManager authenticationManager) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
+		this.authenticationManager = authenticationManager;
 	}
 
 	public String registerUser(RegisterRequest request) {
@@ -46,25 +52,27 @@ public class AuthService {
 
 	public LoginResponse loginUser(LoginRequest request) {
 		try {
-			Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+			Authentication authentication = authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(
+							request.getEmail(),
+							request.getPassword()
+					)
+			);
 
-			if (userOptional.isEmpty()) {
-				throw new UserNotFoundException("No account found with this email");
-			}
+			// Authentication succeeded, get UserPrincipal
+			UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
-			if (!passwordEncoder.matches(request.getPassword(),
-					userOptional.get().getPassword())) {
-				throw new InvalidCredentialsException("Invalid email or password");
-			}
+			// Now generate JWT using their email or username
+			String token = jwtTokenProvider.generateToken(userPrincipal.getEmail());
 
-			String token = jwtTokenProvider.generateToken(request.getEmail());
 			return LoginResponse.builder()
 					.token(token)
 					.build();
-		} catch (UserNotFoundException | InvalidCredentialsException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException("Error during login: " + e.getMessage());
+
+		} catch (UsernameNotFoundException ex) {
+			throw new UserNotFoundException("User not found with email: " + request.getEmail());
+		} catch (AuthenticationException ex) {
+			throw new InvalidCredentialsException("Invalid email or password");
 		}
 	}
 }
