@@ -15,47 +15,41 @@ import java.io.IOException;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository userRepository;
+	private final JwtTokenProvider jwtTokenProvider;
+	private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserRepository userRepository) {
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.userRepository = userRepository;
-    }
+	public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserRepository userRepository) {
+		this.jwtTokenProvider = jwtTokenProvider;
+		this.userRepository = userRepository;
+	}
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+	@Override
+	protected void doFilterInternal(HttpServletRequest request,
+									HttpServletResponse response,
+									FilterChain filterChain) throws ServletException, IOException {
 
-        // 1. Extract token from 'Authorization' header
-        String token = resolveToken(request);
+		// Extract token from 'Authorization' header
+		String token = resolveToken(request);
 
-        // 2. Validate token
-        if (token != null && jwtTokenProvider.validateToken(token)) {
+		// Validate token
+		if (token != null && jwtTokenProvider.validateToken(token)) {
+			Long userId = Long.parseLong(jwtTokenProvider.getUserIdFromToken(token));
+			User user = userRepository.findById(userId).orElse(null);
+			UserPrincipal userPrincipal = new UserPrincipal(user);
+			UsernamePasswordAuthenticationToken authToken =
+					new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
+			SecurityContextHolder.getContext().setAuthentication(authToken);
+		}
 
-            // 3. Parse claims or user details
-            String email = jwtTokenProvider.getEmailFromToken(token);
+		// Continue filter chain
+		filterChain.doFilter(request, response);
+	}
 
-            // After extracting email from token
-            User user = userRepository.findByEmail(email).orElse(null);
-            UserPrincipal userPrincipal = new UserPrincipal(user);
-
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
-
-            SecurityContextHolder.getContext().setAuthentication(authToken);
-        }
-
-        // Continue filter chain
-        filterChain.doFilter(request, response);
-    }
-
-    private String resolveToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
-    }
+	private String resolveToken(HttpServletRequest request) {
+		String bearerToken = request.getHeader("Authorization");
+		if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+			return bearerToken.substring(7);
+		}
+		return null;
+	}
 }

@@ -63,7 +63,7 @@ public class AuthService {
 			UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
 			// Now generate JWT using their email or username
-			String token = jwtTokenProvider.generateToken(userPrincipal.getEmail());
+			String token = jwtTokenProvider.generateToken(userPrincipal);
 
 			return LoginResponse.builder()
 					.token(token)

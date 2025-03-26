@@ -129,14 +129,14 @@ public class AuthServiceTest {
 			when(authenticationManager.authenticate(any()))
 					.thenReturn(authentication);
 
-			when(jwtTokenProvider.generateToken("user@example.com"))
+			when(jwtTokenProvider.generateToken(userPrincipal))
 					.thenReturn("jwt-token");
 
 			LoginResponse response = authService.loginUser(request);
 
 			assertEquals("jwt-token", response.getToken());
 			verify(authenticationManager).authenticate(any());
-			verify(jwtTokenProvider).generateToken("user@example.com");
+			verify(jwtTokenProvider).generateToken(userPrincipal);
 		}
 
 		@Test
