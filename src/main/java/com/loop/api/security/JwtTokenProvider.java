@@ -29,6 +29,7 @@ public class JwtTokenProvider {
 				.subject(String.valueOf(user.getId()))
 				.claim("email", user.getEmail())
 				.claim("username", user.getUsername())
+				.claim("profileUrl", user.getProfileUrl())
 				.claim("isAdmin", user.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN")))
 				.issuedAt(new Date())
 				.expiration(new Date(System.currentTimeMillis() + expirationTime))
