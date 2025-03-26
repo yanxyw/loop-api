@@ -203,25 +203,27 @@ public class UserServiceTest {
 			verify(userRepository, never()).save(any());
 			verifyNoInteractions(userMapper);
 		}
-
+		
 		@Test
-		@DisplayName("Should throw UserAlreadyExistsException if email/username/mobile is not unique")
-		void shouldThrowIfDuplicateFieldExists() {
+		@DisplayName("Should throw UserAlreadyExistsException if mobile is not unique")
+		void shouldThrowIfMobileIsDuplicate() {
 			User existingUser = TestUserFactory.regularUser(1L);
 
 			UpdateUserProfileRequest request = new UpdateUserProfileRequest();
-			request.setEmail("duplicate@example.com");
+			request.setMobile("1234567890");
 
 			when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
-
-			doThrow(new UserAlreadyExistsException("User with email 'duplicate@example.com' already exists."))
-					.when(userRepository).findByEmail("duplicate@example.com");
+			when(userRepository.findByMobile("1234567890"))
+					.thenReturn(Optional.of(new User() {{
+						setId(2L);
+					}})); // Simulate another user with same mobile
 
 			assertThrows(UserAlreadyExistsException.class, () -> {
 				userService.updateUserProfile(1L, request);
 			});
 
 			verify(userRepository).findById(1L);
+			verify(userRepository).findByMobile("1234567890");
 			verify(userRepository, never()).save(any());
 			verifyNoInteractions(userMapper);
 		}
