@@ -66,6 +66,7 @@ public class AuthService {
 			String token = jwtTokenProvider.generateToken(userPrincipal);
 
 			return LoginResponse.builder()
+					.userId(userPrincipal.getId())
 					.token(token)
 					.build();
 

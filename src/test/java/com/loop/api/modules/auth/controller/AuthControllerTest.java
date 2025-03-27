@@ -169,7 +169,7 @@ public class AuthControllerTest {
 		@DisplayName("Login: should authenticate user and return token")
 		void shouldLoginSuccessfully() throws Exception {
 			LoginRequest loginRequest = new LoginRequest("test@example.com", "test1234");
-			LoginResponse loginResponse = new LoginResponse("abc123");
+			LoginResponse loginResponse = new LoginResponse(1L, "abc123");
 
 			when(authService.loginUser(any(LoginRequest.class)))
 					.thenReturn(loginResponse);
