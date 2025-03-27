@@ -3,12 +3,20 @@ package com.loop.api.modules.auth.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.exception.InvalidCredentialsException;
+import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.common.exception.UserAlreadyExistsException;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.auth.service.AuthService;
+import com.loop.api.modules.auth.service.RefreshTokenService;
+import com.loop.api.modules.user.model.User;
+import com.loop.api.security.JwtTokenProvider;
+import com.loop.api.security.UserPrincipal;
+import com.loop.api.testutils.TestUserFactory;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
@@ -18,15 +26,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Tag("UnitTest")
 @WebMvcTest(AuthController.class)
@@ -41,6 +51,12 @@ public class AuthControllerTest {
 
 	@MockitoBean
 	private AuthService authService;
+
+	@MockitoBean
+	private RefreshTokenService refreshTokenService;
+
+	@MockitoBean
+	private JwtTokenProvider jwtTokenProvider;
 
 	@Nested
 	@DisplayName("Tests for sign up")
@@ -174,6 +190,15 @@ public class AuthControllerTest {
 			when(authService.loginUser(any(LoginRequest.class)))
 					.thenReturn(loginResponse);
 
+			RefreshToken mockToken = new RefreshToken();
+			mockToken.setToken("mock-refresh-token");
+
+			when(refreshTokenService.createRefreshToken(anyLong()))
+					.thenReturn(mockToken);
+
+			when(refreshTokenService.createRefreshTokenCookie(anyString()))
+					.thenReturn(ResponseCookie.from("refreshToken", "mock-token").build());
+
 			mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content(objectMapper.writeValueAsString(loginRequest)))
@@ -262,6 +287,70 @@ public class AuthControllerTest {
 					.andExpect(jsonPath("$.status").value("ERROR"))
 					.andExpect(jsonPath("$.code").value(500))
 					.andExpect(jsonPath("$.message").value("An unexpected error occurred"));
+		}
+	}
+
+	@Nested
+	@DisplayName("Tests for refreshToken")
+	class RefreshTokenTests {
+
+		@Test
+		@DisplayName("Refresh: should return new access token and refresh token cookie")
+		void shouldRefreshTokenSuccessfully() throws Exception {
+			User user = TestUserFactory.regularUser(1L);
+			RefreshToken oldToken = new RefreshToken();
+			oldToken.setToken("old-refresh-token");
+			oldToken.setUser(user);
+
+			RefreshToken newToken = new RefreshToken();
+			newToken.setToken("new-refresh-token");
+			newToken.setUser(user);
+
+			when(refreshTokenService.verifyRefreshToken(eq("old-refresh-token")))
+					.thenReturn(oldToken);
+
+			doNothing().when(refreshTokenService).deleteByToken("old-refresh-token");
+
+			when(refreshTokenService.createRefreshToken(eq(1L)))
+					.thenReturn(newToken);
+
+			when(jwtTokenProvider.generateToken(any(UserPrincipal.class)))
+					.thenReturn("new-access-token");
+
+			when(refreshTokenService.createRefreshTokenCookie(eq("new-refresh-token")))
+					.thenReturn(ResponseCookie.from("refreshToken", "new-refresh-token").build());
+
+			mockMvc.perform(post(ApiRoutes.Auth.REFRESH)
+							.cookie(new Cookie("refreshToken", "old-refresh-token")))
+					.andExpect(status().isOk())
+					.andExpect(header().exists(HttpHeaders.SET_COOKIE))
+					.andExpect(jsonPath("$.status").value("SUCCESS"))
+					.andExpect(jsonPath("$.code").value(200))
+					.andExpect(jsonPath("$.message").value("Token refreshed"))
+					.andExpect(jsonPath("$.data.token").value("new-access-token"))
+					.andExpect(jsonPath("$.data.userId").value(1));
+		}
+
+		@Test
+		@DisplayName("Refresh: should return 401 if refresh token is missing")
+		void shouldReturn400IfTokenMissing() throws Exception {
+			mockMvc.perform(post(ApiRoutes.Auth.REFRESH))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(401))
+					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is missing."));
+		}
+
+		@Test
+		@DisplayName("Refresh: should return 401 if token is invalid/expired")
+		void shouldReturn401IfTokenInvalidOrExpired() throws Exception {
+			when(refreshTokenService.verifyRefreshToken("expired-token"))
+					.thenThrow(new InvalidTokenException("Refresh token is invalid or expired"));
+
+			mockMvc.perform(post(ApiRoutes.Auth.REFRESH)
+							.cookie(new Cookie("refreshToken", "expired-token")))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is invalid or expired"));
 		}
 	}
 }
