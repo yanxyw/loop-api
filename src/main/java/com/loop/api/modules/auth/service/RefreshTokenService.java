@@ -19,15 +19,15 @@ import java.util.UUID;
 public class RefreshTokenService {
 
 	private final RefreshTokenRepository refreshTokenRepository;
-
 	private final UserRepository userRepository;
+	private final Long refreshTokenDurationMs;
 
-	@Value("${jwt.refreshExpirationMs}")
-	private Long refreshTokenDurationMs;
-
-	public RefreshTokenService(RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
+	public RefreshTokenService(RefreshTokenRepository refreshTokenRepository,
+							   UserRepository userRepository,
+							   @Value("${jwt.refreshExpirationMs}") Long refreshTokenDurationMs) {
 		this.refreshTokenRepository = refreshTokenRepository;
 		this.userRepository = userRepository;
+		this.refreshTokenDurationMs = refreshTokenDurationMs;
 	}
 
 	public RefreshToken createRefreshToken(Long userId) {
@@ -45,7 +45,9 @@ public class RefreshTokenService {
 	}
 
 	public void deleteByUserId(Long userId) {
-		User user = userRepository.findById(userId).orElseThrow();
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
 		refreshTokenRepository.deleteByUser(user);
 	}
 
@@ -53,7 +55,6 @@ public class RefreshTokenService {
 		refreshTokenRepository.findByToken(token)
 				.ifPresent(refreshTokenRepository::delete);
 	}
-
 
 	public RefreshToken verifyRefreshToken(String tokenStr) {
 		return refreshTokenRepository.findByToken(tokenStr)
@@ -70,6 +71,5 @@ public class RefreshTokenService {
 				.sameSite("Strict")
 				.build();
 	}
-
 }
 
