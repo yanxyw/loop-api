@@ -112,7 +112,7 @@ public class AuthControllerIT {
 				.andExpect(jsonPath("$.status").value("SUCCESS"))
 				.andExpect(jsonPath("$.code").value(200))
 				.andExpect(jsonPath("$.message").value("Login successful"))
-				.andExpect(jsonPath("$.data.token").isNotEmpty())
+				.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
 				.andExpect(jsonPath("$.data.userId").value(user.getId()))
 				.andReturn();
 
@@ -145,7 +145,7 @@ public class AuthControllerIT {
 				.andExpect(jsonPath("$.status").value("SUCCESS"))
 				.andExpect(jsonPath("$.code").value(200))
 				.andExpect(jsonPath("$.message").value("Token refreshed"))
-				.andExpect(jsonPath("$.data.token").isNotEmpty())
+				.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
 				.andExpect(jsonPath("$.data.userId").value(user.getId()))
 				.andExpect(header().string(HttpHeaders.SET_COOKIE, Matchers.containsString("refreshToken")))
 				.andReturn();

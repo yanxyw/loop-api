@@ -206,7 +206,7 @@ public class AuthControllerTest {
 					.andExpect(jsonPath("$.status").value("SUCCESS"))
 					.andExpect(jsonPath("$.code").value(200))
 					.andExpect(jsonPath("$.message").value("Login successful"))
-					.andExpect(jsonPath("$.data.token").value("abc123"));
+					.andExpect(jsonPath("$.data.accessToken").value("abc123"));
 		}
 
 		@Test
@@ -327,7 +327,7 @@ public class AuthControllerTest {
 					.andExpect(jsonPath("$.status").value("SUCCESS"))
 					.andExpect(jsonPath("$.code").value(200))
 					.andExpect(jsonPath("$.message").value("Token refreshed"))
-					.andExpect(jsonPath("$.data.token").value("new-access-token"))
+					.andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
 					.andExpect(jsonPath("$.data.userId").value(1));
 		}
 
