@@ -134,7 +134,7 @@ public class AuthServiceTest {
 
 			LoginResponse response = authService.loginUser(request);
 
-			assertEquals("jwt-token", response.getToken());
+			assertEquals("jwt-token", response.getAccessToken());
 			verify(authenticationManager).authenticate(any());
 			verify(jwtTokenProvider).generateToken(userPrincipal);
 		}

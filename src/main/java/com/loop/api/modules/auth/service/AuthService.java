@@ -67,7 +67,7 @@ public class AuthService {
 
 			return LoginResponse.builder()
 					.userId(userPrincipal.getId())
-					.token(token)
+					.accessToken(token)
 					.build();
 
 		} catch (UsernameNotFoundException ex) {

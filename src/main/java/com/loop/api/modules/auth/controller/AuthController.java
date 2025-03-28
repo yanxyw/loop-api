@@ -77,6 +77,6 @@ public class AuthController {
 				.ok()
 				.header(HttpHeaders.SET_COOKIE, cookie.toString())
 				.body(ApiResponse.success(HttpStatus.OK, "Token refreshed",
-						LoginResponse.builder().token(newAccessToken).userId(user.getId()).build()));
+						LoginResponse.builder().accessToken(newAccessToken).userId(user.getId()).build()));
 	}
 }
