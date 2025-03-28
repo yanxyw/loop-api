@@ -1,7 +1,6 @@
 package com.loop.api.security;
 
 import com.loop.api.modules.user.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,47 +17,48 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository userRepository;
+	private final JwtTokenProvider jwtTokenProvider;
+	private final UserRepository userRepository;
+	private final UnauthorizedHandler unauthorizedHandler;
+	private final ForbiddenHandler accessDeniedHandler;
 
-    @Autowired
-    private AuthEntryPoint authEntryPoint;
+	public SecurityConfig(JwtTokenProvider jwtTokenProvider,
+						  UserRepository userRepository,
+						  UnauthorizedHandler unauthorizedHandler,
+						  ForbiddenHandler accessDeniedHandler) {
+		this.jwtTokenProvider = jwtTokenProvider;
+		this.userRepository = userRepository;
+		this.unauthorizedHandler = unauthorizedHandler;
+		this.accessDeniedHandler = accessDeniedHandler;
+	}
 
-    @Autowired
-    private CustomAccessDeniedHandler accessDeniedHandler;
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtTokenProvider, userRepository);
+		http
+				.csrf(AbstractHttpConfigurer::disable)
+				.exceptionHandling(exception -> exception
+						.authenticationEntryPoint(unauthorizedHandler)
+						.accessDeniedHandler(accessDeniedHandler)
+				)
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/", "/public/**", "/auth/**", "/docs/**", "/actuator/health").permitAll()
+						.anyRequest().authenticated()
+				)
+				// You can configure JWT filters or any other filters here
+				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+				.httpBasic(AbstractHttpConfigurer::disable)
+				.formLogin(AbstractHttpConfigurer::disable);
+		return http.build();
+	}
 
-    public SecurityConfig(JwtTokenProvider jwtTokenProvider, UserRepository userRepository) {
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.userRepository = userRepository;
-    }
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtTokenProvider, userRepository);
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(authEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler)
-                )
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/public/**", "/auth/**", "/docs/**", "/actuator/health").permitAll()
-                        .anyRequest().authenticated()
-                )
-                // You can configure JWT filters or any other filters here
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable);
-        return http.build();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
+	@Bean
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+		return authConfig.getAuthenticationManager();
+	}
 }

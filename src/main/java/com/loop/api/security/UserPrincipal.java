@@ -68,4 +68,8 @@ public class UserPrincipal implements UserDetails, Principal {
 	public boolean isEnabled() {
 		return true;
 	}
+
+	public Object getProfileUrl() {
+		return user.getProfileUrl();
+	}
 }
