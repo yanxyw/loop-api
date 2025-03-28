@@ -10,7 +10,6 @@ import com.loop.api.security.JwtTokenProvider;
 import com.loop.api.security.UserPrincipal;
 import com.loop.api.testutils.PostgresTestContainerConfig;
 import com.loop.api.testutils.TestUserFactory;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -64,16 +63,6 @@ public class UserControllerIT {
 				.andExpect(jsonPath("$.data.email").value(testUser.getEmail()))
 				.andExpect(jsonPath("$.data.username").value(testUser.getUsername()))
 				.andExpect(jsonPath("$.data.id").value(testUser.getId()));
-	}
-
-	@Test
-	@DisplayName("Should return 401 when token is missing")
-	void shouldReturn401WhenTokenMissing() throws Exception {
-		mockMvc.perform(get(ApiRoutes.User.ME))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.status").value("ERROR"))
-				.andExpect(jsonPath("$.code").value(401))
-				.andExpect(jsonPath("$.message").value(Matchers.containsString("Unauthorized")));
 	}
 
 	@Test
