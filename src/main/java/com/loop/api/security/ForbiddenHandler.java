@@ -1,7 +1,7 @@
 package com.loop.api.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.loop.api.common.dto.response.ApiResponse;
+import com.loop.api.common.dto.response.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,7 @@ public class ForbiddenHandler implements AccessDeniedHandler {
 					   HttpServletResponse response,
 					   AccessDeniedException accessDeniedException) throws IOException {
 
-		ApiResponse<Void> errorResponse = ApiResponse.error(
+		StandardResponse<Void> errorResponse = StandardResponse.error(
 				HttpStatus.FORBIDDEN,
 				"Forbidden: You do not have permission."
 		);

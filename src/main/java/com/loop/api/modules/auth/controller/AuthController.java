@@ -1,7 +1,7 @@
 package com.loop.api.modules.auth.controller;
 
 import com.loop.api.common.constants.ApiRoutes;
-import com.loop.api.common.dto.response.ApiResponse;
+import com.loop.api.common.dto.response.StandardResponse;
 import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
@@ -34,15 +34,15 @@ public class AuthController {
 	}
 
 	@PostMapping(ApiRoutes.Auth.SIGNUP)
-	public ResponseEntity<ApiResponse<String>> signup(@Valid @RequestBody RegisterRequest request) {
+	public ResponseEntity<StandardResponse<String>> signup(@Valid @RequestBody RegisterRequest request) {
 		String response = authService.registerUser(request);
 		return ResponseEntity
 				.status(HttpStatus.CREATED)
-				.body(ApiResponse.success(HttpStatus.CREATED, "User registered", response));
+				.body(StandardResponse.success(HttpStatus.CREATED, "User registered", response));
 	}
 
 	@PostMapping(value = ApiRoutes.Auth.LOGIN, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+	public ResponseEntity<StandardResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
 		LoginResponse response = authService.loginUser(request);
 
 		RefreshToken refreshToken = refreshTokenService.createRefreshToken(response.getUserId());
@@ -52,11 +52,11 @@ public class AuthController {
 		return ResponseEntity
 				.ok()
 				.header(HttpHeaders.SET_COOKIE, cookie.toString())
-				.body(ApiResponse.success(HttpStatus.OK, "Login successful", response));
+				.body(StandardResponse.success(HttpStatus.OK, "Login successful", response));
 	}
 
 	@PostMapping(ApiRoutes.Auth.REFRESH)
-	public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(
+	public ResponseEntity<StandardResponse<LoginResponse>> refreshToken(
 			@CookieValue(value = "refreshToken", required = false) String refreshTokenStr) {
 		if (refreshTokenStr == null) {
 			throw new InvalidTokenException("Refresh token is missing.");
@@ -76,7 +76,7 @@ public class AuthController {
 		return ResponseEntity
 				.ok()
 				.header(HttpHeaders.SET_COOKIE, cookie.toString())
-				.body(ApiResponse.success(HttpStatus.OK, "Token refreshed",
+				.body(StandardResponse.success(HttpStatus.OK, "Token refreshed",
 						LoginResponse.builder().accessToken(newAccessToken).userId(user.getId()).build()));
 	}
 }
