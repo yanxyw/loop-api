@@ -203,7 +203,7 @@ public class UserServiceTest {
 			verify(userRepository, never()).save(any());
 			verifyNoInteractions(userMapper);
 		}
-		
+
 		@Test
 		@DisplayName("Should throw UserAlreadyExistsException if mobile is not unique")
 		void shouldThrowIfMobileIsDuplicate() {
@@ -226,6 +226,34 @@ public class UserServiceTest {
 			verify(userRepository).findByMobile("1234567890");
 			verify(userRepository, never()).save(any());
 			verifyNoInteractions(userMapper);
+		}
+
+		@Test
+		@DisplayName("Should allow update with same values (no uniqueness conflict)")
+		void shouldAllowUpdateWithSameValues() {
+			User existingUser = TestUserFactory.regularUser(1L);
+
+			// Set request values to the same as existing
+			UpdateUserProfileRequest request = new UpdateUserProfileRequest();
+			request.setEmail(existingUser.getEmail());
+			request.setUsername(existingUser.getUsername());
+			request.setMobile(existingUser.getMobile());
+			request.setProfileUrl(existingUser.getProfileUrl());
+
+			UserResponse expected = TestUserResponseFactory.fromUser(existingUser);
+
+			when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+			when(userRepository.findByEmail(existingUser.getEmail())).thenReturn(Optional.of(existingUser));
+			when(userRepository.findByUsername(existingUser.getUsername())).thenReturn(Optional.of(existingUser));
+			when(userRepository.findByMobile(existingUser.getMobile())).thenReturn(Optional.of(existingUser));
+			when(userRepository.save(existingUser)).thenReturn(existingUser);
+			when(userMapper.toUserResponse(existingUser)).thenReturn(expected);
+
+			UserResponse result = userService.updateUserProfile(1L, request);
+
+			assertEquals(expected.getEmail(), result.getEmail());
+			assertEquals(expected.getUsername(), result.getUsername());
+			verify(userRepository).save(existingUser);
 		}
 	}
 
