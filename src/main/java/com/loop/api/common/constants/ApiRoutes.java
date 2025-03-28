@@ -2,6 +2,8 @@ package com.loop.api.common.constants;
 
 public final class ApiRoutes {
 
+	public static final String CONTEXT_PATH = "/api/v1";
+
 	private ApiRoutes() {
 	}
 
@@ -14,6 +16,7 @@ public final class ApiRoutes {
 		public static final String BASE = "/auth";
 		public static final String LOGIN = BASE + "/login";
 		public static final String SIGNUP = BASE + "/signup";
+		public static final String REFRESH = BASE + "/refresh";
 	}
 
 	public static final class User {

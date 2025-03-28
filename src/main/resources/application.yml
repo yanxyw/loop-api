@@ -38,7 +38,8 @@ springdoc:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: 86400000
+  accessExpirationMs: ${JWT_ACCESS_EXPIRATION_MS}
+  refreshExpirationMs: ${JWT_REFRESH_EXPIRATION_MS}
 
 logging:
   level:

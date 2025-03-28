@@ -70,6 +70,13 @@ public class GlobalExceptionHandler {
 				.body(ApiResponse.error(HttpStatus.FORBIDDEN, "Forbidden: You do not have permission."));
 	}
 
+	@ExceptionHandler(InvalidTokenException.class)
+	public ResponseEntity<ApiResponse<Void>> handleInvalidTokenException(InvalidTokenException ex) {
+		return ResponseEntity
+				.status(HttpStatus.UNAUTHORIZED)
+				.body(ApiResponse.error(HttpStatus.UNAUTHORIZED, "Unauthorized: " + ex.getMessage()));
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiResponse<Void>> handleGlobalException(Exception ex) {
 		return ResponseEntity
