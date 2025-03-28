@@ -21,14 +21,19 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
-      # Run unit tests on ALL pushes and PRs
-      - name: Run unit tests
-        run: ./mvnw clean test -Dgroups=UnitTest
-
-      # Run full test suite with coverage on main push or PRs
-      - name: Run all tests with coverage (main)
-        if: github.ref == 'refs/heads/main'
-        run: ./mvnw clean verify
+      # Determine the test strategy based on branch and event type
+      - name: Run tests
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" || ("${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main") ]]; then
+            echo "Running full test suite with coverage..."
+            ./mvnw clean verify jacoco:report
+          elif [[ "${{ github.ref }}" == "refs/heads/dev" || ("${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "dev") ]]; then
+            echo "Running unit and integration tests..."
+            ./mvnw clean verify
+          else
+            echo "Running unit tests only..."
+            ./mvnw clean test -Dgroups=UnitTest
+          fi
 
       # Upload test coverage to Codecov (main only)
       - name: Upload coverage to Codecov
