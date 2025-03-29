@@ -1,7 +1,7 @@
 package com.loop.api.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.loop.api.common.dto.response.ApiResponse;
+import com.loop.api.common.dto.response.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -25,7 +25,7 @@ public class UnauthorizedHandler implements AuthenticationEntryPoint {
 						 HttpServletResponse response,
 						 AuthenticationException authException) throws IOException {
 
-		ApiResponse<Void> errorResponse = ApiResponse.error(
+		StandardResponse<Void> errorResponse = StandardResponse.error(
 				HttpStatus.UNAUTHORIZED,
 				"Unauthorized: " + authException.getMessage()
 		);

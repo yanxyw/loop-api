@@ -9,11 +9,13 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString(exclude = "password")
-@Table(name = "users", uniqueConstraints = {
-		@UniqueConstraint(columnNames = "email"),
-		@UniqueConstraint(columnNames = "mobile"),
-		@UniqueConstraint(columnNames = "username")
-})
+@Table(name = "users",
+		indexes = {
+				@Index(name = "idx_user_email", columnList = "email"),
+				@Index(name = "idx_user_mobile", columnList = "mobile"),
+				@Index(name = "idx_user_username", columnList = "username")
+		}
+)
 public class User {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

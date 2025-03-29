@@ -21,7 +21,7 @@ public class UserValidationUtil {
 						throw new UserAlreadyExistsException("User with username '" + username + "' already exists.");
 					});
 		}
-		if (mobile != null && !mobile.isBlank()) {
+		if (mobile != null) {
 			userRepository.findByMobile(mobile)
 					.filter(user -> !user.getId().equals(excludeUserId))
 					.ifPresent(user -> {

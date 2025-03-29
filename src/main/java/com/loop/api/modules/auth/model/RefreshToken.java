@@ -10,7 +10,11 @@ import java.time.Instant;
 @Entity
 @Getter
 @Setter
-@Table(name = "refresh_tokens")
+@Table(name = "refresh_tokens", indexes = {
+		@Index(name = "idx_token", columnList = "token"),
+		@Index(name = "idx_user_id", columnList = "user_id"),
+		@Index(name = "idx_expiry_date", columnList = "expiryDate")
+})
 public class RefreshToken {
 
 	@Id
@@ -21,6 +25,7 @@ public class RefreshToken {
 	private String token;
 
 	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
 	@Column(nullable = false)
