@@ -11,7 +11,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,11 +19,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @Tag("IntegrationTest")
 @SpringBootTest
-@TestPropertySource(properties = {
-		"jwt.secret=super-secure-ans-super-long-test-secret-key",
-		"jwt.accessExpirationMs=3600000",
-		"jwt.refreshExpirationMs=3600000"
-})
 @AutoConfigureMockMvc
 @Import(UserController.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -81,6 +75,20 @@ public class JwtAuthenticationFilterIT {
 	void shouldReturnNullIfAuthorizationHeaderIsInvalidFormat() throws Exception {
 		mockMvc.perform(get(ApiRoutes.User.ME)
 						.header(HttpHeaders.AUTHORIZATION, "Token abc.def.ghi"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@DisplayName("Should return 401 if user in JWT token does not exist")
+	@Test
+	void shouldReturnUnauthorizedIfUserNotFound() throws Exception {
+		UserPrincipal ghostUserPrincipal = new UserPrincipal(
+				TestUserFactory.regularUser(9999L)
+		);
+
+		String validTokenWithGhostUser = jwtTokenProvider.generateToken(ghostUserPrincipal);
+
+		mockMvc.perform(get(ApiRoutes.User.ME)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + validTokenWithGhostUser))
 				.andExpect(status().isUnauthorized());
 	}
 }

@@ -37,23 +37,14 @@ public class JwtTokenProvider {
 				.compact();
 	}
 
-	public boolean validateToken(String token) {
-		try {
-			Jwts.parser()
-					.verifyWith(key)
-					.build()
-					.parseSignedClaims(token);
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
-	public String getUserIdFromToken(String token) {
-		Jws<Claims> claims = Jwts.parser()
+	public Jws<Claims> parseToken(String token) {
+		return Jwts.parser()
 				.verifyWith(key)
 				.build()
 				.parseSignedClaims(token);
+	}
+
+	public String getUserIdFromClaims(Jws<Claims> claims) {
 		return claims.getPayload().getSubject();
 	}
 }
