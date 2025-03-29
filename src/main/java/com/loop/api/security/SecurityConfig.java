@@ -34,7 +34,8 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtTokenProvider, userRepository);
+		JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtTokenProvider, userRepository,
+				unauthorizedHandler);
 		http
 				.csrf(AbstractHttpConfigurer::disable)
 				.exceptionHandling(exception -> exception

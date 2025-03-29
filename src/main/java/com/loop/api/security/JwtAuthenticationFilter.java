@@ -2,12 +2,17 @@ package com.loop.api.security;
 
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -17,10 +22,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final UserRepository userRepository;
+	private final AuthenticationEntryPoint unauthorizedHandler;
 
-	public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserRepository userRepository) {
+	public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserRepository userRepository,
+								   AuthenticationEntryPoint unauthorizedHandler) {
 		this.jwtTokenProvider = jwtTokenProvider;
 		this.userRepository = userRepository;
+		this.unauthorizedHandler = unauthorizedHandler;
 	}
 
 	@Override
@@ -28,20 +36,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 									HttpServletResponse response,
 									FilterChain filterChain) throws ServletException, IOException {
 
-		// Extract token from 'Authorization' header
 		String token = resolveToken(request);
 
-		// Validate token
-		if (token != null && jwtTokenProvider.validateToken(token)) {
-			Long userId = Long.parseLong(jwtTokenProvider.getUserIdFromToken(token));
-			User user = userRepository.findById(userId).orElse(null);
-			UserPrincipal userPrincipal = new UserPrincipal(user);
-			UsernamePasswordAuthenticationToken authToken =
-					new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
-			SecurityContextHolder.getContext().setAuthentication(authToken);
+		if (token != null) {
+			try {
+				Jws<Claims> claims = jwtTokenProvider.parseToken(token);
+				Long userId = Long.parseLong(jwtTokenProvider.getUserIdFromClaims(claims));
+
+				User user = userRepository.findById(userId)
+						.orElseThrow(() -> new InsufficientAuthenticationException("User not found for token."));
+
+				UserPrincipal userPrincipal = new UserPrincipal(user);
+				UsernamePasswordAuthenticationToken authToken =
+						new UsernamePasswordAuthenticationToken(userPrincipal, null,
+								userPrincipal.getAuthorities());
+				SecurityContextHolder.getContext().setAuthentication(authToken);
+			} catch (JwtException | IllegalArgumentException | InsufficientAuthenticationException e) {
+				SecurityContextHolder.clearContext();
+				unauthorizedHandler.commence(request, response,
+						new InsufficientAuthenticationException("Invalid or expired access token.", e));
+				return;
+			}
 		}
 
-		// Continue filter chain
 		filterChain.doFilter(request, response);
 	}
 

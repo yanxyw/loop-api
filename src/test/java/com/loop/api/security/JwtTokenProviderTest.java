@@ -2,6 +2,9 @@ package com.loop.api.security;
 
 import com.loop.api.modules.user.model.User;
 import com.loop.api.testutils.TestUserFactory;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -21,27 +24,34 @@ public class JwtTokenProviderTest {
 	}
 
 	@Test
-	void shouldGenerateAndValidateToken() {
+	void shouldGenerateAndParseToken() {
 		User user = TestUserFactory.regularUser(1L);
 		UserPrincipal principal = new UserPrincipal(user);
 
 		String token = jwtTokenProvider.generateToken(principal);
 		assertNotNull(token);
-		assertTrue(jwtTokenProvider.validateToken(token));
+
+		Jws<Claims> claims = jwtTokenProvider.parseToken(token);
+		assertNotNull(claims);
+		assertEquals("1", claims.getPayload().getSubject());
 	}
 
 	@Test
-	void shouldExtractUserIdFromToken() {
+	void shouldExtractUserIdFromParsedToken() {
 		User user = TestUserFactory.regularUser(1L);
 		UserPrincipal principal = new UserPrincipal(user);
-		String token = jwtTokenProvider.generateToken(principal);
 
-		String userId = jwtTokenProvider.getUserIdFromToken(token);
+		String token = jwtTokenProvider.generateToken(principal);
+		Jws<Claims> claims = jwtTokenProvider.parseToken(token);
+
+		String userId = jwtTokenProvider.getUserIdFromClaims(claims);
 		assertEquals("1", userId);
 	}
 
 	@Test
-	void shouldReturnFalseForInvalidToken() {
-		assertFalse(jwtTokenProvider.validateToken("invalid.token.string"));
+	void shouldThrowExceptionForInvalidToken() {
+		assertThrows(JwtException.class, () -> {
+			jwtTokenProvider.parseToken("invalid.token.string");
+		});
 	}
 }
