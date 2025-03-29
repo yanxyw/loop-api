@@ -21,6 +21,13 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  cache:
+    type: redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 server:
   servlet:
     context-path: /api/v1
