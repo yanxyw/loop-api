@@ -244,7 +244,8 @@ public class AuthControllerTest {
 			LoginRequest request = new LoginRequest("unknown@example.com", "password");
 
 			when(authService.loginUser(any(LoginRequest.class)))
-					.thenThrow(new UserNotFoundException("No account found with this email"));
+					.thenThrow(new UserNotFoundException("This email is not registered. Would you like to sign up " +
+							"instead?"));
 
 			mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
 							.contentType(MediaType.APPLICATION_JSON)
@@ -252,7 +253,8 @@ public class AuthControllerTest {
 					.andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.status").value("ERROR"))
 					.andExpect(jsonPath("$.code").value(404))
-					.andExpect(jsonPath("$.message").value("No account found with this email"));
+					.andExpect(jsonPath("$.message").value("This email is not registered. Would you like to sign up " +
+							"instead?"));
 		}
 
 		@Test
