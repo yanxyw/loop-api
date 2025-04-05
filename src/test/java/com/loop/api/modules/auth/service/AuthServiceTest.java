@@ -21,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -126,6 +125,9 @@ public class AuthServiceTest {
 			Authentication authentication = mock(Authentication.class);
 			when(authentication.getPrincipal()).thenReturn(userPrincipal);
 
+			when(userRepository.findByEmail("user@example.com"))
+					.thenReturn(Optional.of(user));
+
 			when(authenticationManager.authenticate(any()))
 					.thenReturn(authentication);
 
@@ -144,8 +146,8 @@ public class AuthServiceTest {
 		void shouldThrowIfUserNotFound() {
 			LoginRequest request = new LoginRequest("notfound@example.com", "password");
 
-			when(authenticationManager.authenticate(any()))
-					.thenThrow(new UsernameNotFoundException("User not found"));
+			when(userRepository.findByEmail("notfound@example.com"))
+					.thenReturn(Optional.empty());
 
 			assertThrows(UserNotFoundException.class, () -> authService.loginUser(request));
 		}
@@ -154,6 +156,13 @@ public class AuthServiceTest {
 		@DisplayName("Should throw InvalidCredentialsException if password is incorrect")
 		void shouldThrowIfPasswordIncorrect() {
 			LoginRequest request = new LoginRequest("user@example.com", "wrongPassword");
+
+			User user = new User();
+			user.setEmail("user@example.com");
+			user.setPassword("hashedPassword");
+
+			when(userRepository.findByEmail("user@example.com"))
+					.thenReturn(Optional.of(user));
 
 			when(authenticationManager.authenticate(any()))
 					.thenThrow(new BadCredentialsException("Bad credentials"));
@@ -165,6 +174,13 @@ public class AuthServiceTest {
 		@DisplayName("Should throw RuntimeException if unexpected exception occurs")
 		void shouldThrowRuntimeExceptionOnUnexpectedError() {
 			LoginRequest request = new LoginRequest("user@example.com", "password");
+
+			User user = new User();
+			user.setEmail("user@example.com");
+			user.setPassword("hashedPassword");
+
+			when(userRepository.findByEmail("user@example.com"))
+					.thenReturn(Optional.of(user));
 
 			when(authenticationManager.authenticate(any()))
 					.thenThrow(new RuntimeException("DB error"));

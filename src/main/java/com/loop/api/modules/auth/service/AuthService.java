@@ -14,9 +14,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -51,6 +52,12 @@ public class AuthService {
 	}
 
 	public LoginResponse loginUser(LoginRequest request) {
+		// First, check if the user exists
+		Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
+		if (userOpt.isEmpty()) {
+			throw new UserNotFoundException("This email is not registered. Would you like to sign up instead?");
+		}
+
 		try {
 			Authentication authentication = authenticationManager.authenticate(
 					new UsernamePasswordAuthenticationToken(
@@ -69,9 +76,7 @@ public class AuthService {
 					.userId(userPrincipal.getId())
 					.accessToken(token)
 					.build();
-
-		} catch (UsernameNotFoundException ex) {
-			throw new UserNotFoundException("User not found with email: " + request.getEmail());
+			
 		} catch (AuthenticationException ex) {
 			throw new InvalidCredentialsException("Invalid email or password");
 		}
