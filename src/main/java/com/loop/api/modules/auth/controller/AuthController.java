@@ -17,11 +17,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.*;
-import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @Tag(name = "Authentication", description = "Endpoints for user auth related operations")
@@ -69,14 +72,9 @@ public class AuthController {
 	public ResponseEntity<StandardResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
 		LoginResponse response = authService.loginUser(request);
 
-		RefreshToken refreshToken = refreshTokenService.createRefreshToken(response.getUserId());
-
-		ResponseCookie cookie = refreshTokenService.createRefreshTokenCookie(refreshToken.getToken());
-
-		return ResponseEntity
-				.ok()
-				.header(HttpHeaders.SET_COOKIE, cookie.toString())
-				.body(StandardResponse.success(HttpStatus.OK, "Login successful", response));
+		return ResponseEntity.ok(
+				StandardResponse.success(HttpStatus.OK, "Login successful", response)
+		);
 	}
 
 	@Operation(
@@ -91,8 +89,9 @@ public class AuthController {
 	})
 	@PostMapping(ApiRoutes.Auth.REFRESH)
 	public ResponseEntity<StandardResponse<LoginResponse>> refreshToken(
-			@CookieValue(value = "refreshToken", required = false)
-			String refreshTokenStr) {
+			@RequestBody Map<String, String> requestBody) {
+
+		String refreshTokenStr = requestBody.get("refreshToken");
 		if (refreshTokenStr == null) {
 			throw new InvalidTokenException("Refresh token is missing.");
 		}
@@ -100,18 +99,21 @@ public class AuthController {
 		RefreshToken oldToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
 		User user = oldToken.getUser();
 
-		// Delete old and create new token
 		refreshTokenService.deleteByToken(oldToken.getToken());
 		RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
 		UserPrincipal userPrincipal = new UserPrincipal(user);
 		String newAccessToken = jwtTokenProvider.generateToken(userPrincipal);
 
-		ResponseCookie cookie = refreshTokenService.createRefreshTokenCookie(newRefreshToken.getToken());
-
-		return ResponseEntity
-				.ok()
-				.header(HttpHeaders.SET_COOKIE, cookie.toString())
-				.body(StandardResponse.success(HttpStatus.OK, "Token refreshed",
-						LoginResponse.builder().accessToken(newAccessToken).userId(user.getId()).build()));
+		return ResponseEntity.ok(
+				StandardResponse.success(
+						HttpStatus.OK,
+						"Token refreshed",
+						LoginResponse.builder()
+								.userId(user.getId())
+								.accessToken(newAccessToken)
+								.refreshToken(newRefreshToken.getToken())
+								.build()
+				)
+		);
 	}
 }
