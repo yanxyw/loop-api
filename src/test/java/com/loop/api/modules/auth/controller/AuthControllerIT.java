@@ -1,6 +1,7 @@
 package com.loop.api.modules.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.RegisterRequest;
@@ -11,26 +12,23 @@ import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import com.loop.api.testutils.PostgresTestContainerConfig;
 import com.loop.api.testutils.TestUserFactory;
-import jakarta.servlet.http.Cookie;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Tag("IntegrationTest")
 @SpringBootTest
@@ -99,7 +97,7 @@ public class AuthControllerIT {
 		request.setEmail("login@example.com");
 		request.setPassword("securePass123");
 
-		MvcResult result = mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
+		mockMvc.perform(post(ApiRoutes.Auth.LOGIN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isOk())
@@ -107,13 +105,9 @@ public class AuthControllerIT {
 				.andExpect(jsonPath("$.code").value(200))
 				.andExpect(jsonPath("$.message").value("Login successful"))
 				.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+				.andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
 				.andExpect(jsonPath("$.data.userId").value(user.getId()))
 				.andReturn();
-
-		// Assert refresh token cookie is set
-		String setCookieHeader = result.getResponse().getHeader(HttpHeaders.SET_COOKIE);
-		assertNotNull(setCookieHeader);
-		assertTrue(setCookieHeader.contains("refreshToken="));
 
 		// Assert refresh token saved in DB
 		List<RefreshToken> tokens = refreshTokenRepository.findAll();
@@ -132,26 +126,22 @@ public class AuthControllerIT {
 		RefreshToken oldRefreshToken = refreshTokenService.createRefreshToken(user.getId());
 		assertTrue(refreshTokenRepository.findByToken(oldRefreshToken.getToken()).isPresent());
 
-		// Act - perform request with cookie
+		// Act - perform request with refresh token in body
 		MvcResult result = mockMvc.perform(post(ApiRoutes.Auth.REFRESH)
-						.cookie(new Cookie("refreshToken", oldRefreshToken.getToken())))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"refreshToken\": \"" + oldRefreshToken.getToken() + "\"}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("SUCCESS"))
 				.andExpect(jsonPath("$.code").value(200))
 				.andExpect(jsonPath("$.message").value("Token refreshed"))
 				.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+				.andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
 				.andExpect(jsonPath("$.data.userId").value(user.getId()))
-				.andExpect(header().string(HttpHeaders.SET_COOKIE, Matchers.containsString("refreshToken")))
 				.andReturn();
 
-		// Extract the new refresh token from Set-Cookie header
-		String setCookieHeader = result.getResponse().getHeader(HttpHeaders.SET_COOKIE);
-		assert setCookieHeader != null;
-		String newRefreshTokenValue = Arrays.stream(setCookieHeader.split(";"))
-				.filter(s -> s.startsWith("refreshToken="))
-				.findFirst()
-				.map(s -> s.replace("refreshToken=", ""))
-				.orElseThrow(() -> new AssertionError("New refresh token not found in cookie"));
+		// Extract the new refresh token from response body
+		String jsonResponse = result.getResponse().getContentAsString();
+		String newRefreshTokenValue = JsonPath.read(jsonResponse, "$.data.refreshToken");
 
 		// Assert - old token is deleted
 		assertFalse(refreshTokenRepository.findByToken(oldRefreshToken.getToken()).isPresent());

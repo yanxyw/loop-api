@@ -6,6 +6,7 @@ import com.loop.api.common.util.UserValidationUtil;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import com.loop.api.security.JwtTokenProvider;
@@ -24,13 +25,17 @@ public class AuthService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final RefreshTokenService refreshTokenService;
 	private final AuthenticationManager authenticationManager;
 
 	public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-					   JwtTokenProvider jwtTokenProvider, AuthenticationManager authenticationManager) {
+					   JwtTokenProvider jwtTokenProvider, RefreshTokenService refreshTokenService,
+					   AuthenticationManager authenticationManager
+	) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
+		this.refreshTokenService = refreshTokenService;
 		this.authenticationManager = authenticationManager;
 	}
 
@@ -70,13 +75,17 @@ public class AuthService {
 			UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
 			// Now generate JWT using their email or username
-			String token = jwtTokenProvider.generateToken(userPrincipal);
+			String accessToken = jwtTokenProvider.generateToken(userPrincipal);
+
+			// Generate refresh token and save to DB
+			RefreshToken refreshToken = refreshTokenService.createRefreshToken(userPrincipal.getId());
 
 			return LoginResponse.builder()
 					.userId(userPrincipal.getId())
-					.accessToken(token)
+					.accessToken(accessToken)
+					.refreshToken(refreshToken.getToken())
 					.build();
-			
+
 		} catch (AuthenticationException ex) {
 			throw new InvalidCredentialsException("Invalid email or password");
 		}

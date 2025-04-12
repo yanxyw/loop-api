@@ -6,6 +6,7 @@ import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import com.loop.api.security.JwtTokenProvider;
@@ -38,6 +39,8 @@ public class AuthServiceTest {
 	private PasswordEncoder passwordEncoder;
 	@Mock
 	private AuthenticationManager authenticationManager;
+	@Mock
+	private RefreshTokenService refreshTokenService;
 	@Mock
 	private JwtTokenProvider jwtTokenProvider;
 
@@ -124,6 +127,14 @@ public class AuthServiceTest {
 
 			Authentication authentication = mock(Authentication.class);
 			when(authentication.getPrincipal()).thenReturn(userPrincipal);
+
+			RefreshToken refreshToken = new RefreshToken();
+			refreshToken.setToken("refresh-token");
+			refreshToken.setUser(user);
+
+			when(refreshTokenService.createRefreshToken(user.getId()))
+					.thenReturn(refreshToken);
+
 
 			when(userRepository.findByEmail("user@example.com"))
 					.thenReturn(Optional.of(user));

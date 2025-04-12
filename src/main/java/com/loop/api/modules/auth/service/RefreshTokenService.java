@@ -1,6 +1,5 @@
 package com.loop.api.modules.auth.service;
 
-import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.auth.model.RefreshToken;
@@ -8,10 +7,8 @@ import com.loop.api.modules.auth.repository.RefreshTokenRepository;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -60,16 +57,6 @@ public class RefreshTokenService {
 		return refreshTokenRepository.findByToken(tokenStr)
 				.filter(token -> !isExpired(token))
 				.orElseThrow(() -> new InvalidTokenException("Refresh token is invalid or expired"));
-	}
-
-	public ResponseCookie createRefreshTokenCookie(String tokenValue) {
-		return ResponseCookie.from("refreshToken", tokenValue)
-				.httpOnly(true)
-				.secure(true)
-				.path(ApiRoutes.CONTEXT_PATH + ApiRoutes.Auth.REFRESH)
-				.maxAge(Duration.ofMillis(refreshTokenDurationMs))
-				.sameSite("Strict")
-				.build();
 	}
 }
 

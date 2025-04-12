@@ -15,4 +15,7 @@ public class LoginResponse {
 
 	@Schema(description = "JWT access token to use in Authorization header", example = "eyJhbGciOiJIUzI1...")
 	private String accessToken;
+
+	@Schema(description = "Refresh token used to obtain a new access token when expired", example = "b3f5cbf8-8f6a...")
+	private String refreshToken;
 }
