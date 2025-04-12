@@ -1,6 +1,5 @@
 package com.loop.api.modules.auth.service;
 
-import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.auth.model.RefreshToken;
@@ -11,7 +10,6 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseCookie;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -190,33 +188,6 @@ public class RefreshTokenServiceTest {
 
 			assertThrows(InvalidTokenException.class,
 					() -> refreshTokenService.verifyRefreshToken(nonexistentTokenStr));
-		}
-	}
-
-	@Nested
-	@DisplayName("Tests for createRefreshTokenCookie")
-	class CreateRefreshTokenCookie {
-
-		private final String tokenValue = "test-refresh-token";
-
-		@BeforeEach
-		void setupDuration() {
-			// Ensure duration is set before running the test
-			refreshTokenService = new RefreshTokenService(refreshTokenRepository, userRepository, 3600000L); // 1 hour
-		}
-
-		@Test
-		@DisplayName("Should create cookie with correct attributes")
-		void shouldCreateCookieWithExpectedAttributes() {
-			ResponseCookie cookie = refreshTokenService.createRefreshTokenCookie(tokenValue);
-
-			assertEquals("refreshToken", cookie.getName());
-			assertEquals(tokenValue, cookie.getValue());
-			assertTrue(cookie.isHttpOnly());
-			assertTrue(cookie.isSecure());
-			assertEquals(ApiRoutes.CONTEXT_PATH + ApiRoutes.Auth.REFRESH, cookie.getPath());
-			assertEquals("Strict", cookie.getSameSite());
-			assertEquals(3600, cookie.getMaxAge().getSeconds());
 		}
 	}
 }
