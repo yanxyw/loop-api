@@ -95,6 +95,9 @@ public class AuthService {
 	public LoginResponse refreshAccessToken(String refreshTokenStr) {
 		// Validate the refresh token and fetch user details
 		RefreshToken oldToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
+		if (oldToken == null) {
+			throw new InvalidTokenException("Refresh token is invalid or expired");
+		}
 		User user = oldToken.getUser();
 
 		// Delete old refresh token and generate a new one

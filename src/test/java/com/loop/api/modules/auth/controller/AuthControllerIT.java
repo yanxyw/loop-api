@@ -116,7 +116,7 @@ public class AuthControllerIT {
 	}
 
 	@Test
-	@DisplayName("Should refresh token successfully with valid refresh token cookie")
+	@DisplayName("Should refresh token successfully with valid refresh token in Authorization header")
 	void shouldRefreshTokenSuccessfully() throws Exception {
 		// Arrange - create and save user
 		User user = TestUserFactory.regularUser(null);
@@ -152,5 +152,30 @@ public class AuthControllerIT {
 
 		// Assert - associated user is still correct
 		assertEquals(user.getId(), newTokenOpt.get().getUser().getId(), "New token should belong to same user");
+	}
+
+	@Test
+	@DisplayName("Logout: should return 200 if refresh token is valid")
+	void shouldReturn200IfTokenIsValid() throws Exception {
+		// Arrange - valid refresh token
+		User user = TestUserFactory.regularUser(null);
+		user = userRepository.save(user);
+
+		// Create and persist a valid refresh token
+		RefreshToken validRefreshToken = refreshTokenService.createRefreshToken(user.getId());
+		assertTrue(refreshTokenRepository.findByToken(validRefreshToken.getToken()).isPresent());
+
+		// Act - perform the logout request with the valid refresh token in the Authorization header
+		mockMvc.perform(post(ApiRoutes.Auth.LOGOUT)
+						.header("Authorization", "Bearer " + validRefreshToken.getToken())) // Valid Bearer token
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("SUCCESS"))
+				.andExpect(jsonPath("$.code").value(200))
+				.andExpect(jsonPath("$.message").value("Logged out successfully"))
+				.andExpect(jsonPath("$.data").value("Refresh token invalidated"));
+
+		// Assert - Check if the refresh token was deleted after logout
+		assertFalse(refreshTokenRepository.findByToken(validRefreshToken.getToken()).isPresent(),
+				"Refresh token should be deleted after logout");
 	}
 }

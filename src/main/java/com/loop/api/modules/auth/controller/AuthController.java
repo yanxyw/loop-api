@@ -7,8 +7,6 @@ import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
 import com.loop.api.modules.auth.service.AuthService;
-import com.loop.api.modules.auth.service.RefreshTokenService;
-import com.loop.api.security.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -29,14 +27,9 @@ import java.util.Map;
 public class AuthController {
 
 	private final AuthService authService;
-	private final RefreshTokenService refreshTokenService;
-	private final JwtTokenProvider jwtTokenProvider;
 
-	public AuthController(AuthService authService, RefreshTokenService refreshTokenService,
-						  JwtTokenProvider jwtTokenProvider) {
+	public AuthController(AuthService authService) {
 		this.authService = authService;
-		this.refreshTokenService = refreshTokenService;
-		this.jwtTokenProvider = jwtTokenProvider;
 	}
 
 	@Operation(summary = "Register a new user", description = "Creates a user with email, password, and username.")
@@ -56,8 +49,7 @@ public class AuthController {
 
 	@Operation(
 			summary = "Login user",
-			description = "Authenticates a user and returns an access token in the response body. " +
-					"A refresh token is set as an HttpOnly cookie."
+			description = "Authenticates a user and returns access and refresh tokens in the response body. "
 	)
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Login successful"),
@@ -77,8 +69,8 @@ public class AuthController {
 
 	@Operation(
 			summary = "Refresh access token",
-			description = "Validates the refresh token from the cookie, issues a new access token, and sets a new " +
-					"refresh token in a HttpOnly cookie."
+			description = "Validates the refresh token from the request body, issues a new access token, and returns" +
+					"new access and refresh tokens."
 	)
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Token refreshed successfully"),
@@ -90,8 +82,8 @@ public class AuthController {
 			@RequestBody Map<String, String> requestBody) {
 
 		String refreshTokenStr = requestBody.get("refreshToken");
-		if (refreshTokenStr == null) {
-			throw new InvalidTokenException("Refresh token is missing.");
+		if (refreshTokenStr == null || refreshTokenStr.isEmpty()) {
+			throw new InvalidTokenException("Refresh token is missing");
 		}
 
 		LoginResponse response = authService.refreshAccessToken(refreshTokenStr);
@@ -110,9 +102,9 @@ public class AuthController {
 			@ApiResponse(responseCode = "500", description = "Unexpected server error")
 	})
 	@PostMapping(ApiRoutes.Auth.LOGOUT)
-	public ResponseEntity<StandardResponse<String>> logout(@RequestHeader("Authorization") String authHeader) {
+	public ResponseEntity<StandardResponse<String>> logout(@RequestHeader(value = "Authorization", defaultValue = "") String authHeader) {
 		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-			throw new InvalidTokenException("Refresh token is missing or malformed.");
+			throw new InvalidTokenException("Refresh token is missing or malformed");
 		}
 
 		String refreshTokenStr = authHeader.substring(7); // Remove "Bearer "
@@ -120,7 +112,7 @@ public class AuthController {
 		authService.logout(refreshTokenStr);
 
 		return ResponseEntity.ok(
-				StandardResponse.success(HttpStatus.OK, "Logged out successfully", "Refresh token invalidated.")
+				StandardResponse.success(HttpStatus.OK, "Logged out successfully", "Refresh token invalidated")
 		);
 	}
 }
