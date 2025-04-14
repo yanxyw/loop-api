@@ -11,10 +11,7 @@ import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
 import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.auth.service.AuthService;
-import com.loop.api.modules.auth.service.RefreshTokenService;
 import com.loop.api.modules.user.model.User;
-import com.loop.api.security.JwtTokenProvider;
-import com.loop.api.security.UserPrincipal;
 import com.loop.api.testutils.TestUserFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -50,12 +47,6 @@ public class AuthControllerTest {
 
 	@MockitoBean
 	private AuthService authService;
-
-	@MockitoBean
-	private RefreshTokenService refreshTokenService;
-
-	@MockitoBean
-	private JwtTokenProvider jwtTokenProvider;
 
 	@Nested
 	@DisplayName("Tests for sign up")
@@ -288,8 +279,9 @@ public class AuthControllerTest {
 	class RefreshTokenTests {
 
 		@Test
-		@DisplayName("Refresh: should return new access token and refresh token cookie")
+		@DisplayName("Refresh: should return new access token and refresh token")
 		void shouldRefreshTokenSuccessfully() throws Exception {
+			// Prepare user and tokens
 			User user = TestUserFactory.regularUser(1L);
 			RefreshToken oldToken = new RefreshToken();
 			oldToken.setToken("old-refresh-token");
@@ -299,17 +291,15 @@ public class AuthControllerTest {
 			newToken.setToken("new-refresh-token");
 			newToken.setUser(user);
 
-			when(refreshTokenService.verifyRefreshToken(eq("old-refresh-token")))
-					.thenReturn(oldToken);
+			// Mock the AuthService method
+			when(authService.refreshAccessToken(eq("old-refresh-token")))
+					.thenReturn(LoginResponse.builder()
+							.accessToken("new-access-token")
+							.refreshToken("new-refresh-token")
+							.userId(1L)
+							.build());
 
-			doNothing().when(refreshTokenService).deleteByToken("old-refresh-token");
-
-			when(refreshTokenService.createRefreshToken(eq(1L)))
-					.thenReturn(newToken);
-
-			when(jwtTokenProvider.generateToken(any(UserPrincipal.class)))
-					.thenReturn("new-access-token");
-
+			// Perform the test with the refresh token in the request body
 			mockMvc.perform(post(ApiRoutes.Auth.REFRESH)
 							.contentType(MediaType.APPLICATION_JSON)
 							.content("{\"refreshToken\": \"old-refresh-token\"}"))
@@ -322,6 +312,7 @@ public class AuthControllerTest {
 					.andExpect(jsonPath("$.data.userId").value(1));
 		}
 
+
 		@Test
 		@DisplayName("Refresh: should return 401 if refresh token is missing")
 		void shouldReturn401IfTokenMissing() throws Exception {
@@ -331,13 +322,25 @@ public class AuthControllerTest {
 					.andExpect(status().isUnauthorized())
 					.andExpect(jsonPath("$.status").value("ERROR"))
 					.andExpect(jsonPath("$.code").value(401))
-					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is missing."));
+					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is missing"));
+		}
+
+		@Test
+		@DisplayName("Refresh: should return 401 if refresh token is empty")
+		void shouldReturn401IfTokenEmpty() throws Exception {
+			mockMvc.perform(post(ApiRoutes.Auth.REFRESH)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"refreshToken\": \"\"}"))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(401))
+					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is missing"));
 		}
 
 		@Test
 		@DisplayName("Refresh: should return 401 if token is invalid/expired")
 		void shouldReturn401IfTokenInvalidOrExpired() throws Exception {
-			when(refreshTokenService.verifyRefreshToken("expired-token"))
+			when(authService.refreshAccessToken(eq("expired-token")))
 					.thenThrow(new InvalidTokenException("Refresh token is invalid or expired"));
 
 			mockMvc.perform(post(ApiRoutes.Auth.REFRESH)
@@ -347,6 +350,62 @@ public class AuthControllerTest {
 					.andExpect(jsonPath("$.status").value("ERROR"))
 					.andExpect(jsonPath("$.code").value(401))
 					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is invalid or expired"));
+		}
+	}
+
+	@Nested
+	@DisplayName("Logout Tests")
+	class LogoutTests {
+
+		@Test
+		@DisplayName("should successfully log out and invalidate the refresh token")
+		void shouldLogOutSuccessfully() throws Exception {
+			// Mocking the AuthService.logout method
+			doNothing().when(authService).logout(eq("valid-refresh-token"));
+
+			// Perform the logout request with a valid Bearer token
+			mockMvc.perform(post(ApiRoutes.Auth.LOGOUT)
+							.header("Authorization", "Bearer valid-refresh-token"))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("SUCCESS"))
+					.andExpect(jsonPath("$.code").value(200))
+					.andExpect(jsonPath("$.message").value("Logged out successfully"))
+					.andExpect(jsonPath("$.data").value("Refresh token invalidated"));
+		}
+
+		@Test
+		@DisplayName("should return 401 if the refresh token is missing")
+		void shouldReturn401IfTokenIsMissing() throws Exception {
+			// Perform the logout request without a Bearer token
+			mockMvc.perform(post(ApiRoutes.Auth.LOGOUT)
+							.header("Authorization", "InvalidToken"))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(401))
+					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is missing or malformed"));
+		}
+
+		@Test
+		@DisplayName("Should return 401 if the Authorization header is malformed")
+		void shouldReturn401IfAuthorizationHeaderIsMalformed() throws Exception {
+			// Perform the logout request with an Authorization header that doesn't start with "Bearer "
+			mockMvc.perform(post(ApiRoutes.Auth.LOGOUT)
+							.header("Authorization", "Basic abc123"))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(401))
+					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is missing or malformed"));
+		}
+
+		@Test
+		@DisplayName("should return 401 if the refresh token is null")
+		void shouldReturn401IfTokenIsNull() throws Exception {
+			// Perform the logout request with a missing Authorization header
+			mockMvc.perform(post(ApiRoutes.Auth.LOGOUT))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(401))
+					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is missing or malformed"));
 		}
 	}
 }

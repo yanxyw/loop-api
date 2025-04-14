@@ -23,6 +23,13 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+	static final String[] EXCLUDED_PATHS = {
+			"/public/**",
+			"/auth/**",
+			"/public/**",
+			"/docs/**",
+			"/actuator/**"
+	};
 	private final JwtTokenProvider jwtTokenProvider;
 	private final UserRepository userRepository;
 	private final UnauthorizedHandler unauthorizedHandler;
@@ -50,7 +57,7 @@ public class SecurityConfig {
 						.accessDeniedHandler(accessDeniedHandler)
 				)
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/", "/public/**", "/auth/**", "/docs/**", "/actuator/*").permitAll()
+						.requestMatchers(EXCLUDED_PATHS).permitAll()
 						.anyRequest().authenticated()
 				)
 				// You can configure JWT filters or any other filters here
