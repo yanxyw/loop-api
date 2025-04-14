@@ -1,6 +1,7 @@
 package com.loop.api.modules.auth.service;
 
 import com.loop.api.common.exception.InvalidCredentialsException;
+import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.common.exception.UserAlreadyExistsException;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.modules.auth.dto.LoginRequest;
@@ -200,6 +201,117 @@ public class AuthServiceTest {
 					() -> authService.loginUser(request));
 
 			assertTrue(exception.getMessage().contains("DB error"));
+		}
+	}
+
+	@Nested
+	@DisplayName("Tests for refresh token service")
+	class RefreshTokenTests {
+
+		@Test
+		@DisplayName("Should refresh token successfully")
+		void shouldRefreshTokenSuccessfully() {
+			// Arrange - create a mock user and refresh token
+			User user = new User();
+			user.setId(1L);
+			user.setEmail("user@example.com");
+
+			RefreshToken oldToken = new RefreshToken();
+			oldToken.setToken("old-refresh-token");
+			oldToken.setUser(user);
+
+			RefreshToken newToken = new RefreshToken();
+			newToken.setToken("new-refresh-token");
+			newToken.setUser(user);
+
+			LoginResponse loginResponse = new LoginResponse();
+			loginResponse.setAccessToken("new-access-token");
+			loginResponse.setRefreshToken(newToken.getToken());
+			loginResponse.setUserId(user.getId());
+
+			// Mocks
+			when(refreshTokenService.verifyRefreshToken("old-refresh-token")).thenReturn(oldToken);
+			doNothing().when(refreshTokenService).deleteByToken("old-refresh-token");
+			when(refreshTokenService.createRefreshToken(user.getId())).thenReturn(newToken);
+			when(jwtTokenProvider.generateToken(any(UserPrincipal.class))).thenReturn("new-access-token");
+
+			// Act
+			LoginResponse result = authService.refreshAccessToken("old-refresh-token");
+
+			// Assert
+			assertNotNull(result);
+			assertEquals("new-access-token", result.getAccessToken());
+			assertEquals("new-refresh-token", result.getRefreshToken());
+			assertEquals(user.getId(), result.getUserId());
+
+			verify(refreshTokenService).deleteByToken("old-refresh-token");
+			verify(refreshTokenService).createRefreshToken(user.getId());
+		}
+
+		@Test
+		@DisplayName("Should throw InvalidTokenException when the refresh token is invalid or expired")
+		void shouldThrowInvalidTokenExceptionWhenTokenInvalid() {
+			when(refreshTokenService.verifyRefreshToken("invalid-refresh-token"))
+					.thenThrow(new InvalidTokenException("Refresh token is invalid or expired"));
+
+			InvalidTokenException exception = assertThrows(InvalidTokenException.class, () -> {
+				authService.refreshAccessToken("invalid-refresh-token");
+			});
+
+			assertEquals("Refresh token is invalid or expired", exception.getMessage());
+		}
+
+		@Test
+		@DisplayName("Should throw InvalidTokenException when the refresh token is null")
+		void shouldThrowInvalidTokenExceptionWhenTokenIsNull() {
+			InvalidTokenException exception = assertThrows(InvalidTokenException.class, () -> {
+				authService.refreshAccessToken(null);
+			});
+
+			assertEquals("Refresh token is invalid or expired", exception.getMessage());
+		}
+	}
+
+	@Nested
+	@DisplayName("Tests for logout functionality")
+	class LogoutTests {
+
+		@Test
+		@DisplayName("Should log out successfully with a valid refresh token")
+		void shouldLogOutSuccessfullyWithValidToken() {
+			String validToken = "valid-refresh-token";
+			RefreshToken refreshToken = new RefreshToken();
+			refreshToken.setToken(validToken);
+
+			when(refreshTokenService.verifyRefreshToken(validToken)).thenReturn(refreshToken);
+			doNothing().when(refreshTokenService).deleteByToken(validToken);
+
+			authService.logout(validToken);
+
+			verify(refreshTokenService).deleteByToken(validToken);
+		}
+
+		@Test
+		@DisplayName("Should throw InvalidTokenException when the refresh token is invalid or expired")
+		void shouldThrowInvalidTokenExceptionWhenTokenIsInvalid() {
+			String invalidToken = "invalid-refresh-token";
+			when(refreshTokenService.verifyRefreshToken(invalidToken)).thenReturn(null);
+
+			InvalidTokenException exception = assertThrows(InvalidTokenException.class, () -> {
+				authService.logout(invalidToken);
+			});
+
+			assertEquals("Invalid or expired refresh token.", exception.getMessage());
+		}
+
+		@Test
+		@DisplayName("Should throw InvalidTokenException when the refresh token is missing")
+		void shouldThrowInvalidTokenExceptionWhenTokenIsMissing() {
+			InvalidTokenException exception = assertThrows(InvalidTokenException.class, () -> {
+				authService.logout(null);
+			});
+
+			assertEquals("Invalid or expired refresh token.", exception.getMessage());
 		}
 	}
 }
