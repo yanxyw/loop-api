@@ -1,6 +1,7 @@
 package com.loop.api.modules.auth.service;
 
 import com.loop.api.common.exception.InvalidCredentialsException;
+import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.common.util.UserValidationUtil;
 import com.loop.api.modules.auth.dto.LoginRequest;
@@ -89,5 +90,37 @@ public class AuthService {
 		} catch (AuthenticationException ex) {
 			throw new InvalidCredentialsException("Invalid email or password");
 		}
+	}
+
+	public LoginResponse refreshAccessToken(String refreshTokenStr) {
+		// Validate the refresh token and fetch user details
+		RefreshToken oldToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
+		User user = oldToken.getUser();
+
+		// Delete old refresh token and generate a new one
+		refreshTokenService.deleteByToken(oldToken.getToken());
+		RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+		// Generate new access token
+		UserPrincipal userPrincipal = new UserPrincipal(user);
+		String newAccessToken = jwtTokenProvider.generateToken(userPrincipal);
+
+		// Return the login response with new tokens
+		return LoginResponse.builder()
+				.userId(user.getId())
+				.accessToken(newAccessToken)
+				.refreshToken(newRefreshToken.getToken())
+				.build();
+	}
+
+	public void logout(String refreshTokenStr) {
+		// Validate the refresh token
+		RefreshToken refreshToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
+		if (refreshToken == null) {
+			throw new InvalidTokenException("Invalid or expired refresh token.");
+		}
+
+		// Delete the refresh token from the database to log the user out
+		refreshTokenService.deleteByToken(refreshToken.getToken());
 	}
 }

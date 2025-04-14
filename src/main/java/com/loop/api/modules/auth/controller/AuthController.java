@@ -6,12 +6,9 @@ import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
-import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.auth.service.AuthService;
 import com.loop.api.modules.auth.service.RefreshTokenService;
-import com.loop.api.modules.user.model.User;
 import com.loop.api.security.JwtTokenProvider;
-import com.loop.api.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -97,24 +94,9 @@ public class AuthController {
 			throw new InvalidTokenException("Refresh token is missing.");
 		}
 
-		RefreshToken oldToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
-		User user = oldToken.getUser();
-
-		refreshTokenService.deleteByToken(oldToken.getToken());
-		RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
-		UserPrincipal userPrincipal = new UserPrincipal(user);
-		String newAccessToken = jwtTokenProvider.generateToken(userPrincipal);
-
+		LoginResponse response = authService.refreshAccessToken(refreshTokenStr);
 		return ResponseEntity.ok(
-				StandardResponse.success(
-						HttpStatus.OK,
-						"Token refreshed",
-						LoginResponse.builder()
-								.userId(user.getId())
-								.accessToken(newAccessToken)
-								.refreshToken(newRefreshToken.getToken())
-								.build()
-				)
+				StandardResponse.success(HttpStatus.OK, "Token refreshed", response)
 		);
 	}
 
@@ -129,23 +111,14 @@ public class AuthController {
 	})
 	@PostMapping(ApiRoutes.Auth.LOGOUT)
 	public ResponseEntity<StandardResponse<String>> logout(@RequestHeader("Authorization") String authHeader) {
-		// Extract the refresh token from the "Authorization" header
 		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
 			throw new InvalidTokenException("Refresh token is missing or malformed.");
 		}
 
 		String refreshTokenStr = authHeader.substring(7); // Remove "Bearer "
 
-		// Step 1: Validate the refresh token and check if it exists
-		RefreshToken refreshToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
-		if (refreshToken == null) {
-			throw new InvalidTokenException("Invalid or expired refresh token.");
-		}
+		authService.logout(refreshTokenStr);
 
-		// Step 2: Delete the refresh token from the database
-		refreshTokenService.deleteByToken(refreshToken.getToken());
-
-		// Step 3: Return a successful response
 		return ResponseEntity.ok(
 				StandardResponse.success(HttpStatus.OK, "Logged out successfully", "Refresh token invalidated.")
 		);
