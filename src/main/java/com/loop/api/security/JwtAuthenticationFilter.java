@@ -1,5 +1,6 @@
 package com.loop.api.security;
 
+import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -35,6 +36,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request,
 									HttpServletResponse response,
 									FilterChain filterChain) throws ServletException, IOException {
+
+		// Check if the request matches any of the excluded paths
+		String requestUri = request.getRequestURI().replace(ApiRoutes.CONTEXT_PATH, "");
+		for (String excludedPath : SecurityConfig.EXCLUDED_PATHS) {
+			if (requestUri.matches(excludedPath.replace("**", ".*"))) {
+				filterChain.doFilter(request, response);
+				return;
+			}
+		}
 
 		String token = resolveToken(request);
 

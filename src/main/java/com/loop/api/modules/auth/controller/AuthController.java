@@ -22,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -114,6 +115,39 @@ public class AuthController {
 								.refreshToken(newRefreshToken.getToken())
 								.build()
 				)
+		);
+	}
+
+	@Operation(
+			summary = "Logout user",
+			description = "Invalidates the refresh token from the database to log out the user."
+	)
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Logged out successfully"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized - refresh token is missing or invalid"),
+			@ApiResponse(responseCode = "500", description = "Unexpected server error")
+	})
+	@PostMapping(ApiRoutes.Auth.LOGOUT)
+	public ResponseEntity<StandardResponse<String>> logout(@RequestHeader("Authorization") String authHeader) {
+		// Extract the refresh token from the "Authorization" header
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			throw new InvalidTokenException("Refresh token is missing or malformed.");
+		}
+
+		String refreshTokenStr = authHeader.substring(7); // Remove "Bearer "
+
+		// Step 1: Validate the refresh token and check if it exists
+		RefreshToken refreshToken = refreshTokenService.verifyRefreshToken(refreshTokenStr);
+		if (refreshToken == null) {
+			throw new InvalidTokenException("Invalid or expired refresh token.");
+		}
+
+		// Step 2: Delete the refresh token from the database
+		refreshTokenService.deleteByToken(refreshToken.getToken());
+
+		// Step 3: Return a successful response
+		return ResponseEntity.ok(
+				StandardResponse.success(HttpStatus.OK, "Logged out successfully", "Refresh token invalidated.")
 		);
 	}
 }
