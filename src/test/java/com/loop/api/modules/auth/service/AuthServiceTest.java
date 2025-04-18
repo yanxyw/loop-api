@@ -314,5 +314,34 @@ public class AuthServiceTest {
 			assertEquals("Invalid or expired refresh token.", exception.getMessage());
 		}
 	}
+
+	@Nested
+	@DisplayName("Tests for email registration check")
+	class EmailRegistrationTests {
+
+		@Test
+		@DisplayName("Should return false when email is not registered")
+		void shouldReturnFalseWhenEmailNotRegistered() {
+			String email = "new@example.com";
+
+			when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+			boolean result = authService.isEmailRegistered(email);
+
+			assertFalse(result);
+		}
+
+		@Test
+		@DisplayName("Should return true when email check throws UserAlreadyExistsException")
+		void shouldReturnTrueWhenEmailCheckThrowsException() {
+			String email = "exists@example.com";
+
+			when(userRepository.findByEmail(email)).thenThrow(new UserAlreadyExistsException("User already exists"));
+
+			boolean result = authService.isEmailRegistered(email);
+
+			assertTrue(result);
+		}
+	}
 }
 
