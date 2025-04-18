@@ -33,10 +33,15 @@ public class AuthController {
 			"already registered.")
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Email is available"),
+			@ApiResponse(responseCode = "400", description = "Email is missing or empty"),
 			@ApiResponse(responseCode = "409", description = "Email is already registered")
 	})
 	@GetMapping(ApiRoutes.Auth.CHECK_EMAIL)
 	public ResponseEntity<StandardResponse<String>> checkEmailAvailability(@RequestParam String email) {
+		if (email.trim().isEmpty()) {
+			throw new IllegalArgumentException("Email must not be empty");
+		}
+
 		boolean isEmailRegistered = authService.isEmailRegistered(email);
 		if (isEmailRegistered) {
 			return ResponseEntity.status(HttpStatus.CONFLICT)
