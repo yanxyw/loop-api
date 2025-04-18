@@ -9,6 +9,8 @@ import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
 import com.loop.api.modules.auth.model.RefreshToken;
+import com.loop.api.modules.auth.model.VerificationToken;
+import com.loop.api.modules.auth.repository.VerificationTokenRepository;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import com.loop.api.security.JwtTokenProvider;
@@ -20,7 +22,10 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -29,16 +34,21 @@ public class AuthService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RefreshTokenService refreshTokenService;
 	private final AuthenticationManager authenticationManager;
+	private final EmailService emailService;
+	private final VerificationTokenRepository verificationTokenRepository;
 
 	public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
 					   JwtTokenProvider jwtTokenProvider, RefreshTokenService refreshTokenService,
-					   AuthenticationManager authenticationManager
-	) {
+					   AuthenticationManager authenticationManager,
+					   EmailService emailService,
+					   VerificationTokenRepository verificationTokenRepository) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
 		this.refreshTokenService = refreshTokenService;
 		this.authenticationManager = authenticationManager;
+		this.emailService = emailService;
+		this.verificationTokenRepository = verificationTokenRepository;
 	}
 
 	public boolean isEmailRegistered(String email) {
@@ -59,8 +69,16 @@ public class AuthService {
 			user.setEmail(request.getEmail());
 			user.setUsername(request.getUsername());
 			user.setPassword(passwordEncoder.encode(request.getPassword()));
-
 			userRepository.save(user);
+
+			String token = UUID.randomUUID().toString();
+			VerificationToken vt = new VerificationToken();
+			vt.setToken(token);
+			vt.setUser(user);
+			vt.setExpiryDate(Instant.now().plus(Duration.ofHours(24)));
+			verificationTokenRepository.save(vt);
+
+			emailService.sendVerificationEmail(user.getEmail(), token);
 			return "User registered successfully";
 		} catch (Exception e) {
 			throw new RuntimeException("Error registering user: " + e.getMessage());

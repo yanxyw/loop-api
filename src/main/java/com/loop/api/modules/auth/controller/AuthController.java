@@ -6,7 +6,11 @@ import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.model.VerificationToken;
+import com.loop.api.modules.auth.repository.VerificationTokenRepository;
 import com.loop.api.modules.auth.service.AuthService;
+import com.loop.api.modules.user.model.User;
+import com.loop.api.modules.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -17,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.Map;
 
 @RestController
@@ -24,9 +29,14 @@ import java.util.Map;
 public class AuthController {
 
 	private final AuthService authService;
+	private final VerificationTokenRepository verificationTokenRepository;
+	private final UserRepository userRepository;
 
-	public AuthController(AuthService authService) {
+	public AuthController(AuthService authService, VerificationTokenRepository verificationTokenRepository,
+						  UserRepository userRepository) {
 		this.authService = authService;
+		this.verificationTokenRepository = verificationTokenRepository;
+		this.userRepository = userRepository;
 	}
 
 	@Operation(summary = "Check if email is already registered", description = "Checks whether the provided email is" +
@@ -56,7 +66,9 @@ public class AuthController {
 			@ApiResponse(responseCode = "201", description = "User created"),
 			@ApiResponse(responseCode = "400", description = "Validation failed"),
 			@ApiResponse(responseCode = "409", description = "User already exists"),
-			@ApiResponse(responseCode = "500", description = "Unexpected server error")
+			@ApiResponse(responseCode = "500", description = "Failed to send verification email or unexpected server" +
+					" " +
+					"error")
 	})
 	@PostMapping(ApiRoutes.Auth.SIGNUP)
 	public ResponseEntity<StandardResponse<String>> signup(@Valid @RequestBody RegisterRequest request) {
@@ -64,6 +76,36 @@ public class AuthController {
 		return ResponseEntity
 				.status(HttpStatus.CREATED)
 				.body(StandardResponse.success(HttpStatus.CREATED, "User registered", response));
+	}
+
+	@Operation(
+			summary = "Verify user email",
+			description = "Verifies a user's email using a token sent to their email address. "
+					+ "If the token is valid and not expired, the user is marked as verified."
+	)
+	@ApiResponses({
+			@ApiResponse(responseCode = "201", description = "User successfully verified"),
+			@ApiResponse(responseCode = "401", description = "Invalid or expired token"),
+			@ApiResponse(responseCode = "500", description = "Unexpected server error")
+	})
+	@GetMapping(ApiRoutes.Auth.VERIFY)
+	public ResponseEntity<StandardResponse<String>> verifyEmail(@RequestParam String token) {
+		VerificationToken vt = verificationTokenRepository.findByToken(token)
+				.orElseThrow(() -> new InvalidTokenException("Invalid token"));
+
+		if (vt.getExpiryDate().isBefore(Instant.now())) {
+			throw new InvalidTokenException("Verification token has expired");
+		}
+
+		User user = vt.getUser();
+		user.setVerified(true);
+		userRepository.save(user);
+
+		verificationTokenRepository.delete(vt);
+
+		return ResponseEntity
+				.status(HttpStatus.CREATED)
+				.body(StandardResponse.success(HttpStatus.CREATED, "User verified", null));
 	}
 
 	@Operation(
