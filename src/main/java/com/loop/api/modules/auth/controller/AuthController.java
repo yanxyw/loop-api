@@ -6,9 +6,7 @@ import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
-import com.loop.api.modules.auth.repository.VerificationTokenRepository;
 import com.loop.api.modules.auth.service.AuthService;
-import com.loop.api.modules.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -26,14 +24,9 @@ import java.util.Map;
 public class AuthController {
 
 	private final AuthService authService;
-	private final VerificationTokenRepository verificationTokenRepository;
-	private final UserRepository userRepository;
 
-	public AuthController(AuthService authService, VerificationTokenRepository verificationTokenRepository,
-						  UserRepository userRepository) {
+	public AuthController(AuthService authService) {
 		this.authService = authService;
-		this.verificationTokenRepository = verificationTokenRepository;
-		this.userRepository = userRepository;
 	}
 
 	@Operation(summary = "Check if email is already registered", description = "Checks whether the provided email is" +
@@ -64,16 +57,27 @@ public class AuthController {
 			@ApiResponse(responseCode = "400", description = "Validation failed"),
 			@ApiResponse(responseCode = "409", description = "User already exists"),
 			@ApiResponse(responseCode = "500", description = "Failed to send verification email or unexpected server" +
-					" " +
 					"error")
 	})
 	@PostMapping(ApiRoutes.Auth.SIGNUP)
+//	public ResponseEntity<StandardResponse<String>> signup(@Valid @RequestBody RegisterRequest request) {
+//		String response = authService.registerUser(request);
+//		return ResponseEntity
+//				.status(HttpStatus.CREATED)
+//				.body(StandardResponse.success(HttpStatus.CREATED, "User registered", response));
+//	}
 	public ResponseEntity<StandardResponse<String>> signup(@Valid @RequestBody RegisterRequest request) {
-		String response = authService.registerUser(request);
-		return ResponseEntity
-				.status(HttpStatus.CREATED)
-				.body(StandardResponse.success(HttpStatus.CREATED, "User registered", response));
+		try {
+			String response = authService.registerUser(request);
+			return ResponseEntity
+					.status(HttpStatus.CREATED)
+					.body(StandardResponse.success(HttpStatus.CREATED, "User registered", response));
+		} catch (Exception e) {
+			e.printStackTrace(); // ✅ Logs the real reason for 500
+			throw e; // rethrow so your global handler can catch it
+		}
 	}
+
 
 	@Operation(
 			summary = "Verify user email",
@@ -81,7 +85,7 @@ public class AuthController {
 					+ "If the token is valid and not expired, the user is marked as verified."
 	)
 	@ApiResponses({
-			@ApiResponse(responseCode = "201", description = "User successfully verified"),
+			@ApiResponse(responseCode = "200", description = "User successfully verified"),
 			@ApiResponse(responseCode = "401", description = "Invalid or expired token"),
 			@ApiResponse(responseCode = "500", description = "Unexpected server error")
 	})
@@ -89,8 +93,8 @@ public class AuthController {
 	public ResponseEntity<StandardResponse<String>> verifyEmail(@RequestParam String token) {
 		authService.verifyEmailToken(token);
 		return ResponseEntity
-				.status(HttpStatus.CREATED)
-				.body(StandardResponse.success(HttpStatus.CREATED, "User verified", null));
+				.status(HttpStatus.OK)
+				.body(StandardResponse.success(HttpStatus.OK, "User verified", null));
 	}
 
 	@Operation(
