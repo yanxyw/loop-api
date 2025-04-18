@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -13,6 +14,11 @@ import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<StandardResponse<String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+		return ResponseEntity.badRequest().body(StandardResponse.error(HttpStatus.BAD_REQUEST, ex.getMessage()));
+	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<StandardResponse<Map<String, String>>> handleValidationErrors(MethodArgumentNotValidException ex) {
@@ -60,6 +66,13 @@ public class GlobalExceptionHandler {
 		return ResponseEntity
 				.status(HttpStatus.UNAUTHORIZED)
 				.body(StandardResponse.error(HttpStatus.UNAUTHORIZED, "Unauthorized: " + ex.getMessage()));
+	}
+
+	@ExceptionHandler(MissingServletRequestParameterException.class)
+	public ResponseEntity<StandardResponse<String>> handleMissingParams(MissingServletRequestParameterException ex) {
+		String paramName = ex.getParameterName();
+		String message = String.format("Missing required parameter: %s", paramName);
+		return ResponseEntity.badRequest().body(StandardResponse.error(HttpStatus.BAD_REQUEST, message));
 	}
 
 	@ExceptionHandler(Exception.class)

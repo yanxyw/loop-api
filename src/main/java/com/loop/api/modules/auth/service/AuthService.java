@@ -2,6 +2,7 @@ package com.loop.api.modules.auth.service;
 
 import com.loop.api.common.exception.InvalidCredentialsException;
 import com.loop.api.common.exception.InvalidTokenException;
+import com.loop.api.common.exception.UserAlreadyExistsException;
 import com.loop.api.common.exception.UserNotFoundException;
 import com.loop.api.common.util.UserValidationUtil;
 import com.loop.api.modules.auth.dto.LoginRequest;
@@ -38,6 +39,15 @@ public class AuthService {
 		this.jwtTokenProvider = jwtTokenProvider;
 		this.refreshTokenService = refreshTokenService;
 		this.authenticationManager = authenticationManager;
+	}
+
+	public boolean isEmailRegistered(String email) {
+		try {
+			UserValidationUtil.validateUniqueUserFields(email, null, null, userRepository, null);
+			return false;
+		} catch (UserAlreadyExistsException e) {
+			return true;
+		}
 	}
 
 	public String registerUser(RegisterRequest request) {

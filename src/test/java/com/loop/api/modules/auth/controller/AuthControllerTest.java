@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,6 +48,63 @@ public class AuthControllerTest {
 
 	@MockitoBean
 	private AuthService authService;
+
+	@Nested
+	@DisplayName("Tests for email availability check")
+	class CheckEmailAvailabilityTests {
+
+		@Test
+		@DisplayName("Should return 200 OK if email is available")
+		void shouldReturnOkIfEmailIsAvailable() throws Exception {
+			String email = "new@example.com";
+
+			when(authService.isEmailRegistered(email)).thenReturn(false);
+
+			mockMvc.perform(get(ApiRoutes.Auth.CHECK_EMAIL)
+							.param("email", email))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("SUCCESS"))
+					.andExpect(jsonPath("$.code").value(200))
+					.andExpect(jsonPath("$.message").value("Email is available"));
+		}
+
+		@Test
+		@DisplayName("Should return 409 Conflict if email is already registered")
+		void shouldReturnConflictIfEmailAlreadyRegistered() throws Exception {
+			String email = "exists@example.com";
+
+			when(authService.isEmailRegistered(email)).thenReturn(true);
+
+			mockMvc.perform(get(ApiRoutes.Auth.CHECK_EMAIL)
+							.param("email", email))
+					.andExpect(status().isConflict())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(409))
+					.andExpect(jsonPath("$.message").value("This email is already registered. Would you like to " +
+							"login instead?"));
+		}
+
+		@Test
+		@DisplayName("Should return 400 Bad Request if email is empty")
+		void shouldReturnBadRequestIfEmailEmpty() throws Exception {
+			mockMvc.perform(get(ApiRoutes.Auth.CHECK_EMAIL)
+							.param("email", "   "))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(400))
+					.andExpect(jsonPath("$.message").value("Email must not be empty"));
+		}
+
+		@Test
+		@DisplayName("Should return 400 Bad Request if email is missing")
+		void shouldReturnBadRequestIfEmailMissing() throws Exception {
+			mockMvc.perform(get(ApiRoutes.Auth.CHECK_EMAIL))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(400))
+					.andExpect(jsonPath("$.message").value("Missing required parameter: email"));
+		}
+	}
 
 	@Nested
 	@DisplayName("Tests for sign up")
