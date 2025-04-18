@@ -1,11 +1,13 @@
 package com.loop.api.modules.auth.service;
 
-import com.loop.api.common.exception.EmailSendException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class EmailService {
 
@@ -21,6 +23,7 @@ public class EmailService {
 		this.contextPath = contextPath;
 	}
 
+	@Async
 	public void sendVerificationEmail(String to, String token) {
 		String link = baseUrl + contextPath + "/auth/verify?token=" + token;
 
@@ -32,7 +35,7 @@ public class EmailService {
 		try {
 			mailSender.send(message);
 		} catch (Exception e) {
-			throw new EmailSendException("Failed to send verification email to " + to, e);
+			log.error("❌ Failed to send verification email to {}", to, e);
 		}
 	}
 }

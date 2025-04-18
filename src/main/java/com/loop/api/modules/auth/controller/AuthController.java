@@ -56,28 +56,15 @@ public class AuthController {
 			@ApiResponse(responseCode = "201", description = "User created"),
 			@ApiResponse(responseCode = "400", description = "Validation failed"),
 			@ApiResponse(responseCode = "409", description = "User already exists"),
-			@ApiResponse(responseCode = "500", description = "Failed to send verification email or unexpected server" +
-					"error")
+			@ApiResponse(responseCode = "500", description = "Unexpected server error")
 	})
 	@PostMapping(ApiRoutes.Auth.SIGNUP)
-//	public ResponseEntity<StandardResponse<String>> signup(@Valid @RequestBody RegisterRequest request) {
-//		String response = authService.registerUser(request);
-//		return ResponseEntity
-//				.status(HttpStatus.CREATED)
-//				.body(StandardResponse.success(HttpStatus.CREATED, "User registered", response));
-//	}
 	public ResponseEntity<StandardResponse<String>> signup(@Valid @RequestBody RegisterRequest request) {
-		try {
-			String response = authService.registerUser(request);
-			return ResponseEntity
-					.status(HttpStatus.CREATED)
-					.body(StandardResponse.success(HttpStatus.CREATED, "User registered", response));
-		} catch (Exception e) {
-			e.printStackTrace(); // ✅ Logs the real reason for 500
-			throw e; // rethrow so your global handler can catch it
-		}
+		String response = authService.registerUser(request);
+		return ResponseEntity
+				.status(HttpStatus.CREATED)
+				.body(StandardResponse.success(HttpStatus.CREATED, "User registered", response));
 	}
-
 
 	@Operation(
 			summary = "Verify user email",

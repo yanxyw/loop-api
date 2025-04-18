@@ -75,12 +75,6 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.badRequest().body(StandardResponse.error(HttpStatus.BAD_REQUEST, message));
 	}
 
-	@ExceptionHandler(EmailSendException.class)
-	public ResponseEntity<StandardResponse<String>> handleEmailSendException(EmailSendException ex) {
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(StandardResponse.error(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
-	}
-
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<StandardResponse<Void>> handleGlobalException(Exception ex) {
 		return ResponseEntity
