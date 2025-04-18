@@ -85,6 +85,21 @@ public class AuthService {
 		}
 	}
 
+	public void verifyEmailToken(String token) {
+		VerificationToken vt = verificationTokenRepository.findByToken(token)
+				.orElseThrow(() -> new InvalidTokenException("Invalid token"));
+
+		if (vt.getExpiryDate().isBefore(Instant.now())) {
+			throw new InvalidTokenException("Verification token has expired");
+		}
+
+		User user = vt.getUser();
+		user.setVerified(true);
+		userRepository.save(user);
+
+		verificationTokenRepository.delete(vt);
+	}
+
 	public LoginResponse loginUser(LoginRequest request) {
 		// First, check if the user exists
 		Optional<User> userOpt = userRepository.findByEmail(request.getEmail());

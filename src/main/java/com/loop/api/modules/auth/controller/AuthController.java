@@ -6,10 +6,8 @@ import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
-import com.loop.api.modules.auth.model.VerificationToken;
 import com.loop.api.modules.auth.repository.VerificationTokenRepository;
 import com.loop.api.modules.auth.service.AuthService;
-import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -21,7 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.Map;
 
 @RestController
@@ -90,19 +87,7 @@ public class AuthController {
 	})
 	@GetMapping(ApiRoutes.Auth.VERIFY)
 	public ResponseEntity<StandardResponse<String>> verifyEmail(@RequestParam String token) {
-		VerificationToken vt = verificationTokenRepository.findByToken(token)
-				.orElseThrow(() -> new InvalidTokenException("Invalid token"));
-
-		if (vt.getExpiryDate().isBefore(Instant.now())) {
-			throw new InvalidTokenException("Verification token has expired");
-		}
-
-		User user = vt.getUser();
-		user.setVerified(true);
-		userRepository.save(user);
-
-		verificationTokenRepository.delete(vt);
-
+		authService.verifyEmailToken(token);
 		return ResponseEntity
 				.status(HttpStatus.CREATED)
 				.body(StandardResponse.success(HttpStatus.CREATED, "User verified", null));
