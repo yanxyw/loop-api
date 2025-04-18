@@ -15,10 +15,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -30,6 +27,23 @@ public class AuthController {
 
 	public AuthController(AuthService authService) {
 		this.authService = authService;
+	}
+
+	@Operation(summary = "Check if email is already registered", description = "Checks whether the provided email is" +
+			"already registered.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Email is available"),
+			@ApiResponse(responseCode = "409", description = "Email is already registered")
+	})
+	@GetMapping(ApiRoutes.Auth.CHECK_EMAIL)
+	public ResponseEntity<StandardResponse<String>> checkEmailAvailability(@RequestParam String email) {
+		boolean isEmailRegistered = authService.isEmailRegistered(email);
+		if (isEmailRegistered) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(StandardResponse.error(HttpStatus.CONFLICT, "This email is already registered. Would you " +
+							"like to login instead?"));
+		}
+		return ResponseEntity.ok(StandardResponse.success(HttpStatus.OK, "Email is available", null));
 	}
 
 	@Operation(summary = "Register a new user", description = "Creates a user with email, password, and username.")
