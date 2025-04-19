@@ -6,6 +6,7 @@ import com.loop.api.common.exception.InvalidTokenException;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.dto.ResendEmailRequest;
 import com.loop.api.modules.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -82,6 +83,25 @@ public class AuthController {
 		return ResponseEntity
 				.status(HttpStatus.OK)
 				.body(StandardResponse.success(HttpStatus.OK, "User verified", null));
+	}
+
+	@Operation(
+			summary = "Resend verification email",
+			description = "Resends a verification email to a user who has not yet verified their email address. "
+					+ "If the user is already verified, a 400 Bad Request error is returned."
+	)
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Verification email resent successfully"),
+			@ApiResponse(responseCode = "400", description = "User is already verified, or email is missing"),
+			@ApiResponse(responseCode = "404", description = "User not found"),
+			@ApiResponse(responseCode = "500", description = "Unexpected server error")
+	})
+	@PostMapping(ApiRoutes.Auth.RESEND_VERIFICATION)
+	public ResponseEntity<StandardResponse<String>> resendVerification(@Valid @RequestBody ResendEmailRequest request) {
+		authService.resendVerificationEmail(request.getEmail());
+		return ResponseEntity.ok(
+				StandardResponse.success(HttpStatus.OK, "Verification email resent", null)
+		);
 	}
 
 	@Operation(

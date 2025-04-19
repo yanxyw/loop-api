@@ -2,13 +2,11 @@ package com.loop.api.modules.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loop.api.common.constants.ApiRoutes;
-import com.loop.api.common.exception.InvalidCredentialsException;
-import com.loop.api.common.exception.InvalidTokenException;
-import com.loop.api.common.exception.UserAlreadyExistsException;
-import com.loop.api.common.exception.UserNotFoundException;
+import com.loop.api.common.exception.*;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.dto.ResendEmailRequest;
 import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.auth.service.AuthService;
 import com.loop.api.modules.user.model.User;
@@ -258,6 +256,60 @@ public class AuthControllerTest {
 					.andExpect(jsonPath("$.status").value("ERROR"))
 					.andExpect(jsonPath("$.code").value(401))
 					.andExpect(jsonPath("$.message").value("Unauthorized: Invalid token"));
+		}
+	}
+
+	@Nested
+	@DisplayName("Tests for resending verification email")
+	class ResendVerificationTests {
+
+		@Test
+		@DisplayName("Should resend verification email successfully")
+		void shouldResendVerificationEmailSuccessfully() throws Exception {
+			ResendEmailRequest request = new ResendEmailRequest("test@example.com");
+
+			mockMvc.perform(post(ApiRoutes.Auth.RESEND_VERIFICATION)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("SUCCESS"))
+					.andExpect(jsonPath("$.code").value(200))
+					.andExpect(jsonPath("$.message").value("Verification email resent"))
+					.andExpect(jsonPath("$.data").doesNotExist());
+
+			verify(authService).resendVerificationEmail("test@example.com");
+		}
+
+		@Test
+		@DisplayName("Should return 400 Bad Request if email is missing")
+		void shouldReturnBadRequestIfEmailMissing() throws Exception {
+			mockMvc.perform(post(ApiRoutes.Auth.RESEND_VERIFICATION)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{}"))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(400))
+					.andExpect(jsonPath("$.message").value("Validation failed"))
+					.andExpect(jsonPath("$.data.email").value("Email is required"));
+
+			verify(authService, never()).resendVerificationEmail(any());
+		}
+
+		@Test
+		@DisplayName("Should return 400 if user is already verified")
+		void shouldReturnBadRequestIfUserAlreadyVerified() throws Exception {
+			ResendEmailRequest request = new ResendEmailRequest("verified@example.com");
+
+			doThrow(new UserAlreadyVerifiedException("User is already verified"))
+					.when(authService).resendVerificationEmail("verified@example.com");
+
+			mockMvc.perform(post(ApiRoutes.Auth.RESEND_VERIFICATION)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(400))
+					.andExpect(jsonPath("$.message").value("User is already verified"));
 		}
 	}
 

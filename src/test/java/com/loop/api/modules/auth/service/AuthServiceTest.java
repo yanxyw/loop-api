@@ -1,9 +1,6 @@
 package com.loop.api.modules.auth.service;
 
-import com.loop.api.common.exception.InvalidCredentialsException;
-import com.loop.api.common.exception.InvalidTokenException;
-import com.loop.api.common.exception.UserAlreadyExistsException;
-import com.loop.api.common.exception.UserNotFoundException;
+import com.loop.api.common.exception.*;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
@@ -190,6 +187,57 @@ public class AuthServiceTest {
 
 			assertThrows(InvalidTokenException.class,
 					() -> authService.verifyEmailToken(token));
+		}
+	}
+
+	@Nested
+	@DisplayName("Tests for resending verification email")
+	class ResendVerificationTests {
+
+		@Test
+		@DisplayName("Should resend verification email if user is not verified")
+		void shouldResendVerificationEmailSuccessfully() {
+			User user = new User();
+			user.setEmail("test@example.com");
+			user.setVerified(false);
+
+			when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+
+			authService.resendVerificationEmail("test@example.com");
+
+			verify(verificationTokenRepository).deleteByUser(user);
+			verify(verificationTokenRepository).save(any(VerificationToken.class));
+			verify(emailService).sendVerificationEmail(eq("test@example.com"), anyString());
+		}
+
+		@Test
+		@DisplayName("Should throw UserNotFoundException if user is not found")
+		void shouldThrowIfUserNotFound() {
+			when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+			assertThrows(UserNotFoundException.class, () ->
+					authService.resendVerificationEmail("missing@example.com"));
+
+			verifyNoInteractions(verificationTokenRepository);
+			verifyNoInteractions(emailService);
+		}
+
+		@Test
+		@DisplayName("Should throw UserAlreadyVerifiedException if user is already verified")
+		void shouldThrowIfUserAlreadyVerified() {
+			User user = new User();
+			user.setEmail("verified@example.com");
+			user.setVerified(true);
+
+			when(userRepository.findByEmail("verified@example.com")).thenReturn(Optional.of(user));
+
+			UserAlreadyVerifiedException ex = assertThrows(UserAlreadyVerifiedException.class, () ->
+					authService.resendVerificationEmail("verified@example.com"));
+
+			assertTrue(ex.getMessage().contains("already verified"));
+
+			verify(verificationTokenRepository, never()).deleteByUser(any());
+			verify(emailService, never()).sendVerificationEmail(any(), any());
 		}
 	}
 

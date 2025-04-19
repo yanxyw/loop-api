@@ -1,9 +1,6 @@
 package com.loop.api.modules.auth.service;
 
-import com.loop.api.common.exception.InvalidCredentialsException;
-import com.loop.api.common.exception.InvalidTokenException;
-import com.loop.api.common.exception.UserAlreadyExistsException;
-import com.loop.api.common.exception.UserNotFoundException;
+import com.loop.api.common.exception.*;
 import com.loop.api.common.util.UserValidationUtil;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
@@ -98,6 +95,25 @@ public class AuthService {
 		userRepository.save(user);
 
 		verificationTokenRepository.delete(vt);
+	}
+
+	public void resendVerificationEmail(String email) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
+
+		if (user.isVerified()) {
+			throw new UserAlreadyVerifiedException("User is already verified");
+		}
+
+		verificationTokenRepository.deleteByUser(user);
+
+		VerificationToken token = new VerificationToken();
+		token.setToken(UUID.randomUUID().toString());
+		token.setUser(user);
+		token.setExpiryDate(Instant.now().plus(Duration.ofHours(24)));
+		verificationTokenRepository.save(token);
+
+		emailService.sendVerificationEmail(user.getEmail(), token.getToken());
 	}
 
 	public LoginResponse loginUser(LoginRequest request) {
