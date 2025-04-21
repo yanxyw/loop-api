@@ -12,6 +12,7 @@ import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
 import com.loop.api.security.JwtTokenProvider;
 import com.loop.api.security.UserPrincipal;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,6 +34,9 @@ public class AuthService {
 	private final AuthenticationManager authenticationManager;
 	private final EmailService emailService;
 	private final VerificationTokenRepository verificationTokenRepository;
+
+	@Value("${app.verification.token-expiration-hours}")
+	private int verificationTokenExpiryHours;
 
 	public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
 					   JwtTokenProvider jwtTokenProvider, RefreshTokenService refreshTokenService,
@@ -72,7 +76,7 @@ public class AuthService {
 			VerificationToken vt = new VerificationToken();
 			vt.setToken(token);
 			vt.setUser(user);
-			vt.setExpiryDate(Instant.now().plus(Duration.ofHours(24)));
+			vt.setExpiryDate(Instant.now().plus(Duration.ofHours(verificationTokenExpiryHours)));
 			verificationTokenRepository.save(vt);
 
 			emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), token);
@@ -110,7 +114,7 @@ public class AuthService {
 		VerificationToken token = new VerificationToken();
 		token.setToken(UUID.randomUUID().toString());
 		token.setUser(user);
-		token.setExpiryDate(Instant.now().plus(Duration.ofHours(24)));
+		token.setExpiryDate(Instant.now().plus(Duration.ofHours(verificationTokenExpiryHours)));
 		verificationTokenRepository.save(token);
 
 		emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), token.getToken());

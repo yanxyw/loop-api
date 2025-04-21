@@ -1,5 +1,6 @@
 package com.loop.api.modules.auth.service;
 
+import com.loop.api.common.constants.ApiRoutes;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +33,7 @@ public class EmailService {
 
 	@Async
 	public void sendVerificationEmail(String to, String firstName, String token) {
-		String link = baseUrl + contextPath + "/auth/verify?token=" + token;
+		String link = baseUrl + contextPath + ApiRoutes.Auth.VERIFY + "?token=" + token;
 
 		try {
 			MimeMessage message = mailSender.createMimeMessage();

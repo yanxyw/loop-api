@@ -59,6 +59,8 @@ springdoc:
 
 app:
   base-url: ${BASE_URL}
+  verification:
+    token-expiration-hours: 24
 
 jwt:
   secret: ${JWT_SECRET}

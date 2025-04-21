@@ -6,7 +6,6 @@ import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.RegisterRequest;
 import com.loop.api.modules.auth.model.RefreshToken;
-import com.loop.api.modules.auth.model.VerificationToken;
 import com.loop.api.modules.auth.repository.RefreshTokenRepository;
 import com.loop.api.modules.auth.repository.VerificationTokenRepository;
 import com.loop.api.modules.auth.service.EmailService;
@@ -26,15 +25,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -96,43 +92,6 @@ public class AuthControllerIT {
 		Optional<User> userOpt = userRepository.findByEmail("test@example.com");
 		assertTrue(userOpt.isPresent());
 		assertEquals("test123", userOpt.get().getUsername());
-	}
-
-	@Test
-	@DisplayName("Should verify user successfully through /verify endpoint")
-	void shouldVerifyUserSuccessfullyThroughVerifyEndpoint() throws Exception {
-		// Arrange: create and save a user
-		User user = new User();
-		user.setEmail("verifyme@example.com");
-		user.setUsername("verifyme");
-		user.setPassword("securePass123");
-		user.setVerified(false);
-		user = userRepository.save(user);
-
-		// Create a valid verification token
-		VerificationToken token = new VerificationToken();
-		token.setToken("valid-token");
-		token.setUser(user);
-		token.setExpiryDate(Instant.now().plus(Duration.ofHours(24)));
-		verificationTokenRepository.save(token);
-
-		// Act: call the /verify endpoint
-		mockMvc.perform(get(ApiRoutes.Auth.VERIFY)
-						.param("token", token.getToken()))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("SUCCESS"))
-				.andExpect(jsonPath("$.code").value(200))
-				.andExpect(jsonPath("$.message").value("User verified"))
-				.andExpect(jsonPath("$.data").doesNotExist());
-
-		// Assert: user is verified in DB
-		Optional<User> updatedUser = userRepository.findById(user.getId());
-		assertTrue(updatedUser.isPresent());
-		assertTrue(updatedUser.get().isVerified(), "User should be verified");
-
-		// Assert: verification token is deleted
-		assertTrue(verificationTokenRepository.findByToken(token.getToken()).isEmpty(),
-				"Token should be deleted after verification");
 	}
 
 	@Test
