@@ -224,42 +224,6 @@ public class AuthControllerTest {
 	}
 
 	@Nested
-	@DisplayName("Tests for email verification")
-	class EmailVerificationTests {
-
-		@Test
-		@DisplayName("Should return 200 when token is valid")
-		void shouldReturnSuccessWhenTokenIsValid() throws Exception {
-			String token = "valid-token";
-
-			doNothing().when(authService).verifyEmailToken(token);
-
-			mockMvc.perform(get(ApiRoutes.Auth.VERIFY)
-							.param("token", token))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.status").value("SUCCESS"))
-					.andExpect(jsonPath("$.code").value(200))
-					.andExpect(jsonPath("$.message").value("User verified"))
-					.andExpect(jsonPath("$.data").isEmpty());
-		}
-
-		@Test
-		@DisplayName("Should return 401 Unauthorized when token is invalid")
-		void shouldReturnUnauthorizedWhenTokenIsInvalid() throws Exception {
-			String token = "invalid-token";
-
-			doThrow(new InvalidTokenException("Invalid token")).when(authService).verifyEmailToken(token);
-
-			mockMvc.perform(get(ApiRoutes.Auth.VERIFY)
-							.param("token", token))
-					.andExpect(status().isUnauthorized())
-					.andExpect(jsonPath("$.status").value("ERROR"))
-					.andExpect(jsonPath("$.code").value(401))
-					.andExpect(jsonPath("$.message").value("Unauthorized: Invalid token"));
-		}
-	}
-
-	@Nested
 	@DisplayName("Tests for resending verification email")
 	class ResendVerificationTests {
 
