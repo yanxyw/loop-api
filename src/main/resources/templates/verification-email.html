@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Your Email</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f0eeeb; font-family:Roboto, sans-serif;">
+
+<table role="presentation" style="background-color: #f0eeeb; border-collapse: collapse;" width="100%">
+    <tr>
+        <td align="center" style="padding: 30px 20px;">
+            <!-- Card -->
+            <table role="presentation"
+                   style="max-width: 600px; background-color: #fbfafa; border-radius: 4px; padding: 0; border-collapse:
+                   collapse;"
+                   width="100%">
+                <tr>
+                    <td style="padding: 40px;">
+                        <!-- Logo -->
+                        <div style="text-align: center; padding-bottom: 24px;">
+                            <img alt="Loop Logo" src="cid:loop-logo" style="display: block; margin: 0 auto;"
+                                 width="60"/>
+                        </div>
+
+                        <!-- Title -->
+                        <div style="text-align: center; font-size: 24px; font-weight: bold; color: #222222;
+                        padding-bottom: 24px; ">
+                            Confirm Your Email Address
+                        </div>
+
+                        <!-- Greeting -->
+                        <div style="font-size: 16px; color: #333333; line-height: 1.6; padding-bottom: 24px;">
+                            <p style="margin: 0 0 12px 0;">Hi <span th:text="${firstName}">there</span>,</p>
+                            <p style="margin: 0;">Thank you for signing up to Loop. We're happy to have you.</p>
+                            <p style="margin: 12px 0 0 0;">Please take a moment to make sure we have your correct email
+                                address.</p>
+                        </div>
+
+                        <!-- CTA Button -->
+                        <div style="text-align: center; padding-bottom: 24px">
+                            <a style="background-color: #3C443F; color: #ffffff; text-decoration: none; padding: 14px
+                             120px; border-radius: 4px; display: inline-block;"
+                               th:href="${link}">
+                                Confirm Email
+                            </a>
+                        </div>
+
+                        <!-- Expiry Note -->
+                        <div style="text-align: center; font-size: 12px; color: #797C7E; ">
+                            This link expires in 24 hours.
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+        <td align="center" style="font-size: 12px; color: #797C7E; padding-bottom: 40px;">
+            <p style="margin: 0;">— The Loop Team</p>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>
