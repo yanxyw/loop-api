@@ -68,24 +68,6 @@ public class AuthController {
 	}
 
 	@Operation(
-			summary = "Verify user email",
-			description = "Verifies a user's email using a token sent to their email address. "
-					+ "If the token is valid and not expired, the user is marked as verified."
-	)
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "User successfully verified"),
-			@ApiResponse(responseCode = "401", description = "Invalid or expired token"),
-			@ApiResponse(responseCode = "500", description = "Unexpected server error")
-	})
-	@GetMapping(ApiRoutes.Auth.VERIFY)
-	public ResponseEntity<StandardResponse<String>> verifyEmail(@RequestParam String token) {
-		authService.verifyEmailToken(token);
-		return ResponseEntity
-				.status(HttpStatus.OK)
-				.body(StandardResponse.success(HttpStatus.OK, "User verified", null));
-	}
-
-	@Operation(
 			summary = "Resend verification email",
 			description = "Resends a verification email to a user who has not yet verified their email address. "
 					+ "If the user is already verified, a 400 Bad Request error is returned."

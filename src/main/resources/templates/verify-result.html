@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,600&display=swap"
+          rel="stylesheet">
+    <title>Email Verification</title>
+    <style>
+        body {
+            font-family: 'Roboto Flex', sans-serif;
+            background-color: #F0EEEB;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 98vh;
+            color: #272829;
+        }
+
+        h2 {
+            font-family: 'Bitter', serif;
+            font-size: 32px;
+        }
+
+        .card {
+            padding: 40px;
+            max-width: 400px;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        .success {
+            color: #3C443F;
+            margin-bottom: 18px;
+        }
+
+        .error {
+            color: #C3654A;
+            margin-bottom: 18px;
+        }
+
+        img {
+            width: 80px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <!-- Logo -->
+    <img alt="Success Icon" th:if="${status == 'success'}" th:src="@{/images/success.svg}"/>
+    <img alt="Error Icon" th:if="${status != 'success'}" th:src="@{/images/error.svg}"/>
+
+    <!-- Title -->
+    <h2 th:text="${status == 'success'} ? 'Email Verified' : 'Verification Failed'"></h2>
+
+    <!-- Message -->
+    <p th:text="${message}">Your email status message will go here.</p>
+</div>
+</body>
+</html>
