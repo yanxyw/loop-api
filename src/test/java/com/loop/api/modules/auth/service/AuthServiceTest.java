@@ -200,6 +200,7 @@ public class AuthServiceTest {
 			User user = new User();
 			user.setEmail("test@example.com");
 			user.setVerified(false);
+			user.setUsername("Testy");
 
 			when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
@@ -207,7 +208,11 @@ public class AuthServiceTest {
 
 			verify(verificationTokenRepository).deleteByUser(user);
 			verify(verificationTokenRepository).save(any(VerificationToken.class));
-			verify(emailService).sendVerificationEmail(eq("test@example.com"), anyString(), anyString());
+			verify(emailService).sendVerificationEmail(
+					eq("test@example.com"),
+					eq("Testy"),
+					anyString()
+			);
 		}
 
 		@Test
