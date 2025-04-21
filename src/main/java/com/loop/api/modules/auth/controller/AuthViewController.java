@@ -20,14 +20,15 @@ public class AuthViewController {
 	}
 
 	@Operation(
-			summary = "Verify user email",
-			description = "Verifies a user's email using a token sent to their email address. "
-					+ "If the token is valid and not expired, the user is marked as verified."
+			summary = "Verify user email (HTML page)",
+			description = "Displays an email verification result HTML page."
 	)
 	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "User successfully verified"),
-			@ApiResponse(responseCode = "401", description = "Invalid or expired token"),
-			@ApiResponse(responseCode = "500", description = "Unexpected server error")
+			@ApiResponse(responseCode = "200", description = "HTML page rendered with verification result"),
+			@ApiResponse(responseCode = "401", description = "HTML page rendered with error if token is invalid or " +
+					"expired"),
+			@ApiResponse(responseCode = "500", description = "HTML page rendered with error for unexpected server " +
+					"error")
 	})
 	@GetMapping(ApiRoutes.Auth.VERIFY)
 	public String verifyEmail(@RequestParam String token, Model model) {
