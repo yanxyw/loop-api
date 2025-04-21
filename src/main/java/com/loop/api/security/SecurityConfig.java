@@ -26,7 +26,6 @@ public class SecurityConfig {
 	static final String[] EXCLUDED_PATHS = {
 			"/public/**",
 			"/auth/**",
-			"/public/**",
 			"/docs/**",
 			"/actuator/**"
 	};

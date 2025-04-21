@@ -71,7 +71,7 @@ public class AuthServiceTest {
 			assertEquals("User registered successfully", result);
 			verify(userRepository).save(any(User.class));
 			verify(verificationTokenRepository).save(any(VerificationToken.class));
-			verify(emailService).sendVerificationEmail(eq("new@example.com"), anyString());
+			verify(emailService).sendVerificationEmail(eq("new@example.com"), anyString(), anyString());
 		}
 
 		@Test
@@ -89,7 +89,7 @@ public class AuthServiceTest {
 
 			verify(userRepository, never()).save(any());
 			verify(verificationTokenRepository, never()).save(any());
-			verify(emailService, never()).sendVerificationEmail(any(), any());
+			verify(emailService, never()).sendVerificationEmail(any(), any(), any());
 		}
 
 		@Test
@@ -107,7 +107,7 @@ public class AuthServiceTest {
 
 			verify(userRepository, never()).save(any());
 			verify(verificationTokenRepository, never()).save(any());
-			verify(emailService, never()).sendVerificationEmail(any(), any());
+			verify(emailService, never()).sendVerificationEmail(any(), any(), any());
 		}
 
 		@Test
@@ -127,7 +127,7 @@ public class AuthServiceTest {
 			assertTrue(ex.getMessage().contains("Error registering user"));
 
 			verify(verificationTokenRepository, never()).save(any());
-			verify(emailService, never()).sendVerificationEmail(any(), any());
+			verify(emailService, never()).sendVerificationEmail(any(), any(), any());
 		}
 	}
 
@@ -207,7 +207,7 @@ public class AuthServiceTest {
 
 			verify(verificationTokenRepository).deleteByUser(user);
 			verify(verificationTokenRepository).save(any(VerificationToken.class));
-			verify(emailService).sendVerificationEmail(eq("test@example.com"), anyString());
+			verify(emailService).sendVerificationEmail(eq("test@example.com"), anyString(), anyString());
 		}
 
 		@Test
@@ -237,7 +237,7 @@ public class AuthServiceTest {
 			assertTrue(ex.getMessage().contains("already verified"));
 
 			verify(verificationTokenRepository, never()).deleteByUser(any());
-			verify(emailService, never()).sendVerificationEmail(any(), any());
+			verify(emailService, never()).sendVerificationEmail(any(), any(), any());
 		}
 	}
 

@@ -69,7 +69,7 @@ public class AuthControllerIT {
 
 	@BeforeEach
 	void setUp() {
-		doNothing().when(emailService).sendVerificationEmail(anyString(), anyString());
+		doNothing().when(emailService).sendVerificationEmail(anyString(), anyString(), anyString());
 		refreshTokenRepository.deleteAll();
 		verificationTokenRepository.deleteAll();
 		userRepository.deleteAll();

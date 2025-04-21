@@ -75,7 +75,7 @@ public class AuthService {
 			vt.setExpiryDate(Instant.now().plus(Duration.ofHours(24)));
 			verificationTokenRepository.save(vt);
 
-			emailService.sendVerificationEmail(user.getEmail(), token);
+			emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), token);
 			return "User registered successfully";
 		} catch (Exception e) {
 			throw new RuntimeException("Error registering user: " + e.getMessage());
@@ -113,7 +113,7 @@ public class AuthService {
 		token.setExpiryDate(Instant.now().plus(Duration.ofHours(24)));
 		verificationTokenRepository.save(token);
 
-		emailService.sendVerificationEmail(user.getEmail(), token.getToken());
+		emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), token.getToken());
 	}
 
 	public LoginResponse loginUser(LoginRequest request) {
