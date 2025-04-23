@@ -3,10 +3,7 @@ package com.loop.api.modules.auth.controller;
 import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.dto.response.StandardResponse;
 import com.loop.api.common.exception.InvalidTokenException;
-import com.loop.api.modules.auth.dto.LoginRequest;
-import com.loop.api.modules.auth.dto.LoginResponse;
-import com.loop.api.modules.auth.dto.RegisterRequest;
-import com.loop.api.modules.auth.dto.ResendEmailRequest;
+import com.loop.api.modules.auth.dto.*;
 import com.loop.api.modules.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -153,5 +150,23 @@ public class AuthController {
 		return ResponseEntity.ok(
 				StandardResponse.success(HttpStatus.OK, "Logged out successfully", "Refresh token invalidated")
 		);
+	}
+
+	@PostMapping(ApiRoutes.Auth.FORGOT_PASSWORD)
+	public ResponseEntity<StandardResponse<String>> forgotPassword(@RequestParam String email) {
+		authService.sendPasswordResetEmail(email);
+		return ResponseEntity.ok(StandardResponse.success(HttpStatus.OK, "Reset code sent", null));
+	}
+
+	@PostMapping(ApiRoutes.Auth.VERIFY_RESET_CODE)
+	public ResponseEntity<StandardResponse<String>> verifyResetCode(@RequestBody VerifyResetCodeRequest request) {
+		authService.verifyResetCode(request.getEmail(), request.getCode());
+		return ResponseEntity.ok(StandardResponse.success(HttpStatus.OK, "Reset code is valid", null));
+	}
+
+	@PostMapping(ApiRoutes.Auth.RESET_PASSWORD)
+	public ResponseEntity<StandardResponse<String>> resetPassword(@RequestBody ResetPasswordRequest request) {
+		authService.resetPassword(request.getEmail(), request.getCode(), request.getNewPassword());
+		return ResponseEntity.ok(StandardResponse.success(HttpStatus.OK, "Password updated", null));
 	}
 }

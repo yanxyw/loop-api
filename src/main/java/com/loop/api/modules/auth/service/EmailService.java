@@ -53,9 +53,36 @@ public class EmailService {
 
 			helper.addInline("loop-logo", imageResource, "image/png");
 
-
 			mailSender.send(message);
 			log.info("✅ Verification email sent to {}", to);
+
+		} catch (Exception e) {
+			log.error("❌ Failed to send verification email to {}", to, e);
+		}
+	}
+
+	public void sendResetPasswordEmail(String to, String firstName, String code) {
+
+		try {
+			MimeMessage message = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+			helper.setTo(to);
+			helper.setSubject("Your password reset code");
+
+			Context thymeleafContext = new Context();
+			thymeleafContext.setVariable("firstName", firstName);
+			thymeleafContext.setVariable("code", code);
+
+			String htmlContent = templateEngine.process("reset-password-email", thymeleafContext);
+			helper.setText(htmlContent, true);
+
+			ClassPathResource imageResource = new ClassPathResource("static/images/logo.png");
+
+			helper.addInline("loop-logo", imageResource, "image/png");
+
+			mailSender.send(message);
+			log.info("✅ Reset password email sent to {}", to);
 
 		} catch (Exception e) {
 			log.error("❌ Failed to send verification email to {}", to, e);

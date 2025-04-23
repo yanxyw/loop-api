@@ -5,8 +5,10 @@ import com.loop.api.common.util.UserValidationUtil;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.model.PasswordResetCode;
 import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.auth.model.VerificationToken;
+import com.loop.api.modules.auth.repository.PasswordResetCodeRepository;
 import com.loop.api.modules.auth.repository.VerificationTokenRepository;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
@@ -19,7 +21,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -34,6 +38,7 @@ public class AuthService {
 	private final AuthenticationManager authenticationManager;
 	private final EmailService emailService;
 	private final VerificationTokenRepository verificationTokenRepository;
+	private final PasswordResetCodeRepository passwordResetCodeRepository;
 
 	@Value("${app.verification.token-expiration-hours}")
 	private int verificationTokenExpiryHours;
@@ -42,7 +47,8 @@ public class AuthService {
 					   JwtTokenProvider jwtTokenProvider, RefreshTokenService refreshTokenService,
 					   AuthenticationManager authenticationManager,
 					   EmailService emailService,
-					   VerificationTokenRepository verificationTokenRepository) {
+					   VerificationTokenRepository verificationTokenRepository,
+					   PasswordResetCodeRepository passwordResetCodeRepository) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
@@ -50,6 +56,7 @@ public class AuthService {
 		this.authenticationManager = authenticationManager;
 		this.emailService = emailService;
 		this.verificationTokenRepository = verificationTokenRepository;
+		this.passwordResetCodeRepository = passwordResetCodeRepository;
 	}
 
 	public boolean isEmailRegistered(String email) {
@@ -188,5 +195,45 @@ public class AuthService {
 
 		// Delete the refresh token from the database to log the user out
 		refreshTokenService.deleteByToken(refreshToken.getToken());
+	}
+
+	@Transactional
+	public void sendPasswordResetEmail(String email) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new UserNotFoundException("This email is not registered"));
+
+		passwordResetCodeRepository.deleteByUser(user);
+
+		SecureRandom secureRandom = new SecureRandom();
+		String code = String.format("%06d", secureRandom.nextInt(1_000_000));
+
+		PasswordResetCode passwordResetCode = new PasswordResetCode();
+		passwordResetCode.setCode(code);
+		passwordResetCode.setUser(user);
+		passwordResetCode.setExpiryDate(Instant.now().plus(Duration.ofMinutes(15)));
+
+		passwordResetCodeRepository.save(passwordResetCode);
+
+		emailService.sendResetPasswordEmail(user.getEmail(), user.getUsername(), code);
+	}
+
+	private PasswordResetCode getValidResetCode(String email, String code) {
+		return passwordResetCodeRepository.findByUserEmailAndCode(email, code)
+				.filter(c -> c.getExpiryDate().isAfter(Instant.now()))
+				.orElseThrow(() -> new InvalidTokenException("Invalid reset code"));
+	}
+
+	public void verifyResetCode(String email, String code) {
+		getValidResetCode(email, code); // Just validate
+	}
+
+	public void resetPassword(String email, String code, String newPassword) {
+		PasswordResetCode resetCode = getValidResetCode(email, code);
+
+		User user = resetCode.getUser();
+		user.setPassword(passwordEncoder.encode(newPassword));
+		userRepository.save(user);
+
+		passwordResetCodeRepository.delete(resetCode);
 	}
 }

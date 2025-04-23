@@ -3,10 +3,7 @@ package com.loop.api.modules.auth.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.common.exception.*;
-import com.loop.api.modules.auth.dto.LoginRequest;
-import com.loop.api.modules.auth.dto.LoginResponse;
-import com.loop.api.modules.auth.dto.RegisterRequest;
-import com.loop.api.modules.auth.dto.ResendEmailRequest;
+import com.loop.api.modules.auth.dto.*;
 import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.auth.service.AuthService;
 import com.loop.api.modules.user.model.User;
@@ -515,6 +512,80 @@ public class AuthControllerTest {
 					.andExpect(jsonPath("$.status").value("ERROR"))
 					.andExpect(jsonPath("$.code").value(401))
 					.andExpect(jsonPath("$.message").value("Unauthorized: Refresh token is missing or malformed"));
+		}
+	}
+
+	@Nested
+	@DisplayName("Tests for verifying reset code")
+	class VerifyResetCodeTests {
+
+		@Test
+		@DisplayName("Should return 200 OK if reset code is valid")
+		void shouldReturnOkIfResetCodeValid() throws Exception {
+			VerifyResetCodeRequest request = new VerifyResetCodeRequest("test@example.com", "123456");
+
+			// No exception = valid
+			doNothing().when(authService).verifyResetCode(request.getEmail(), request.getCode());
+
+			mockMvc.perform(post(ApiRoutes.Auth.VERIFY_RESET_CODE)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("SUCCESS"))
+					.andExpect(jsonPath("$.message").value("Reset code is valid"));
+		}
+
+		@Test
+		@DisplayName("Should return 401 if reset code is invalid")
+		void shouldReturnUnauthorizedIfResetCodeInvalid() throws Exception {
+			VerifyResetCodeRequest request = new VerifyResetCodeRequest("wrong@example.com", "000000");
+
+			doThrow(new InvalidTokenException("Invalid reset code"))
+					.when(authService).verifyResetCode(request.getEmail(), request.getCode());
+
+			mockMvc.perform(post(ApiRoutes.Auth.VERIFY_RESET_CODE)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.message").value("Unauthorized: Invalid reset code"));
+		}
+	}
+
+	@Nested
+	@DisplayName("Tests for resetting password")
+	class ResetPasswordTests {
+
+		@Test
+		@DisplayName("Should reset password successfully")
+		void shouldResetPasswordSuccessfully() throws Exception {
+			ResetPasswordRequest request = new ResetPasswordRequest("test@example.com", "123456", "newPassword");
+
+			doNothing().when(authService).resetPassword(request.getEmail(), request.getCode(),
+					request.getNewPassword());
+
+			mockMvc.perform(post(ApiRoutes.Auth.RESET_PASSWORD)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("SUCCESS"))
+					.andExpect(jsonPath("$.message").value("Password updated"));
+		}
+
+		@Test
+		@DisplayName("Should return 401 if reset code is invalid")
+		void shouldReturnUnauthorizedIfResetCodeInvalid() throws Exception {
+			ResetPasswordRequest request = new ResetPasswordRequest("test@example.com", "000000", "newPassword");
+
+			doThrow(new InvalidTokenException("Invalid reset code"))
+					.when(authService).resetPassword(request.getEmail(), request.getCode(), request.getNewPassword());
+
+			mockMvc.perform(post(ApiRoutes.Auth.RESET_PASSWORD)
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(objectMapper.writeValueAsString(request)))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.message").value("Unauthorized: Invalid reset code"));
 		}
 	}
 }
