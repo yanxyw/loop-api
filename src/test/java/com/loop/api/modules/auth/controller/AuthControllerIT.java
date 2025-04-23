@@ -5,7 +5,11 @@ import com.jayway.jsonpath.JsonPath;
 import com.loop.api.common.constants.ApiRoutes;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.dto.ResetPasswordRequest;
+import com.loop.api.modules.auth.dto.VerifyResetCodeRequest;
+import com.loop.api.modules.auth.model.PasswordResetCode;
 import com.loop.api.modules.auth.model.RefreshToken;
+import com.loop.api.modules.auth.repository.PasswordResetCodeRepository;
 import com.loop.api.modules.auth.repository.RefreshTokenRepository;
 import com.loop.api.modules.auth.repository.VerificationTokenRepository;
 import com.loop.api.modules.auth.service.EmailService;
@@ -21,10 +25,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,11 +69,18 @@ public class AuthControllerIT {
 	@MockitoBean
 	private EmailService emailService;
 
+	@Autowired
+	private PasswordResetCodeRepository passwordResetCodeRepository;
+
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+
 	@BeforeEach
 	void setUp() {
 		doNothing().when(emailService).sendVerificationEmail(anyString(), anyString(), anyString());
 		refreshTokenRepository.deleteAll();
 		verificationTokenRepository.deleteAll();
+		passwordResetCodeRepository.deleteAll();
 		userRepository.deleteAll();
 	}
 
@@ -190,5 +203,53 @@ public class AuthControllerIT {
 		// Assert - Check if the refresh token was deleted after logout
 		assertFalse(refreshTokenRepository.findByToken(validRefreshToken.getToken()).isPresent(),
 				"Refresh token should be deleted after logout");
+	}
+
+	@Test
+	@DisplayName("Should verify reset code successfully")
+	void shouldVerifyResetCodeSuccessfully() throws Exception {
+		User user = TestUserFactory.randomRegularUser();
+		user = userRepository.save(user);
+
+		PasswordResetCode code = new PasswordResetCode();
+		code.setCode("123456");
+		code.setUser(user);
+		code.setExpiryDate(Instant.now().plusSeconds(900));
+		passwordResetCodeRepository.save(code);
+
+		VerifyResetCodeRequest request = new VerifyResetCodeRequest(user.getEmail(), "123456");
+
+		mockMvc.perform(post(ApiRoutes.Auth.VERIFY_RESET_CODE)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("SUCCESS"))
+				.andExpect(jsonPath("$.message").value("Reset code is valid"));
+	}
+
+	@Test
+	@DisplayName("Should reset password successfully")
+	void shouldResetPasswordSuccessfully() throws Exception {
+		User user = TestUserFactory.randomRegularUser();
+		user = userRepository.save(user);
+
+		PasswordResetCode code = new PasswordResetCode();
+		code.setCode("654321");
+		code.setUser(user);
+		code.setExpiryDate(Instant.now().plusSeconds(900));
+		passwordResetCodeRepository.save(code);
+
+		ResetPasswordRequest request = new ResetPasswordRequest(user.getEmail(), "654321", "newSecurePass123");
+
+		mockMvc.perform(post(ApiRoutes.Auth.RESET_PASSWORD)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("SUCCESS"))
+				.andExpect(jsonPath("$.message").value("Password updated"));
+
+		User updatedUser = userRepository.findByEmail(user.getEmail()).orElseThrow();
+		assertTrue(passwordEncoder.matches("newSecurePass123", updatedUser.getPassword()));
+		assertFalse(passwordResetCodeRepository.findByUserEmailAndCode(user.getEmail(), "654321").isPresent());
 	}
 }

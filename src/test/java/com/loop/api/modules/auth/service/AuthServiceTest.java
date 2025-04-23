@@ -4,8 +4,10 @@ import com.loop.api.common.exception.*;
 import com.loop.api.modules.auth.dto.LoginRequest;
 import com.loop.api.modules.auth.dto.LoginResponse;
 import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.model.PasswordResetCode;
 import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.auth.model.VerificationToken;
+import com.loop.api.modules.auth.repository.PasswordResetCodeRepository;
 import com.loop.api.modules.auth.repository.VerificationTokenRepository;
 import com.loop.api.modules.user.model.User;
 import com.loop.api.modules.user.repository.UserRepository;
@@ -49,6 +51,8 @@ public class AuthServiceTest {
 	private EmailService emailService;
 	@Mock
 	private JwtTokenProvider jwtTokenProvider;
+	@Mock
+	private PasswordResetCodeRepository passwordResetCodeRepository;
 
 	@InjectMocks
 	private AuthService authService;
@@ -476,6 +480,108 @@ public class AuthServiceTest {
 			boolean result = authService.isEmailRegistered(email);
 
 			assertTrue(result);
+		}
+	}
+
+	@Nested
+	@DisplayName("Tests for password reset")
+	class ForgotPasswordTests {
+
+		@Test
+		@DisplayName("Should send password reset email successfully")
+		void shouldSendPasswordResetEmailSuccessfully() {
+			User user = new User();
+			user.setEmail("reset@example.com");
+			user.setUsername("resetuser");
+
+			when(userRepository.findByEmail("reset@example.com")).thenReturn(Optional.of(user));
+
+			authService.sendPasswordResetEmail("reset@example.com");
+
+			verify(passwordResetCodeRepository).deleteByUser(user);
+			verify(passwordResetCodeRepository).save(any(PasswordResetCode.class));
+			verify(emailService).sendResetPasswordEmail(eq("reset@example.com"), eq("resetuser"), anyString());
+		}
+
+		@Test
+		@DisplayName("Should throw UserNotFoundException if email is not registered")
+		void shouldThrowUserNotFoundIfEmailDoesNotExist() {
+			when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+			assertThrows(UserNotFoundException.class,
+					() -> authService.sendPasswordResetEmail("missing@example.com"));
+
+			verify(passwordResetCodeRepository, never()).deleteByUser(any());
+			verify(passwordResetCodeRepository, never()).save(any());
+			verify(emailService, never()).sendResetPasswordEmail(any(), any(), any());
+		}
+	}
+
+	@Nested
+	@DisplayName("Tests for reset password flow")
+	class ResetPasswordTests {
+
+		@Test
+		@DisplayName("Should validate reset code successfully")
+		void shouldValidateResetCodeSuccessfully() {
+			String email = "user@example.com";
+			String code = "123456";
+			User user = new User();
+			PasswordResetCode resetCode = new PasswordResetCode();
+			resetCode.setCode(code);
+			resetCode.setExpiryDate(Instant.now().plus(Duration.ofMinutes(5)));
+			resetCode.setUser(user);
+
+			when(passwordResetCodeRepository.findByUserEmailAndCode(email, code)).thenReturn(Optional.of(resetCode));
+
+			assertDoesNotThrow(() -> authService.verifyResetCode(email, code));
+		}
+
+		@Test
+		@DisplayName("Should throw InvalidTokenException when code is not found")
+		void shouldThrowExceptionWhenCodeNotFound() {
+			String email = "user@example.com";
+			String code = "123456";
+
+			when(passwordResetCodeRepository.findByUserEmailAndCode(email, code)).thenReturn(Optional.empty());
+
+			assertThrows(InvalidTokenException.class, () -> authService.verifyResetCode(email, code));
+		}
+
+		@Test
+		@DisplayName("Should throw InvalidTokenException when code is expired")
+		void shouldThrowExceptionWhenCodeExpired() {
+			String email = "user@example.com";
+			String code = "123456";
+			PasswordResetCode expiredCode = new PasswordResetCode();
+			expiredCode.setCode(code);
+			expiredCode.setExpiryDate(Instant.now().minus(Duration.ofMinutes(1)));
+
+			when(passwordResetCodeRepository.findByUserEmailAndCode(email, code)).thenReturn(Optional.of(expiredCode));
+
+			assertThrows(InvalidTokenException.class, () -> authService.verifyResetCode(email, code));
+		}
+
+		@Test
+		@DisplayName("Should reset password successfully")
+		void shouldResetPasswordSuccessfully() {
+			String email = "user@example.com";
+			String code = "123456";
+			String newPassword = "newPass";
+			User user = new User();
+			PasswordResetCode validCode = new PasswordResetCode();
+			validCode.setCode(code);
+			validCode.setExpiryDate(Instant.now().plus(Duration.ofMinutes(5)));
+			validCode.setUser(user);
+
+			when(passwordResetCodeRepository.findByUserEmailAndCode(email, code)).thenReturn(Optional.of(validCode));
+			when(passwordEncoder.encode(newPassword)).thenReturn("encoded");
+
+			authService.resetPassword(email, code, newPassword);
+
+			assertEquals("encoded", user.getPassword());
+			verify(userRepository).save(user);
+			verify(passwordResetCodeRepository).delete(validCode);
 		}
 	}
 }

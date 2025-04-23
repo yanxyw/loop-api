@@ -2,9 +2,7 @@ package com.loop.api.modules.auth.service;
 
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -37,45 +35,95 @@ class EmailServiceTest {
 		emailService = new EmailService(mailSender, "https://app.com", "/api/v1", templateEngine);
 	}
 
-	@Test
-	void shouldSendVerificationEmail() throws Exception {
-		MimeMessage mimeMessage = new MimeMessage((Session) null);
-		when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-		when(templateEngine.process(eq("verification-email"), any(Context.class)))
-				.thenReturn("<html><body>Mocked Email Content</body></html>");
+	@Nested
+	@DisplayName("Send Verification Email Tests")
+	class SendVerificationEmailTests {
+		@Test
+		void shouldSendVerificationEmail() throws Exception {
+			MimeMessage mimeMessage = new MimeMessage((Session) null);
+			when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+			when(templateEngine.process(eq("verification-email"), any(Context.class)))
+					.thenReturn("<html><body>Mocked Email Content</body></html>");
 
-		emailService.sendVerificationEmail("test@example.com", "Testy", "abc123");
+			emailService.sendVerificationEmail("test@example.com", "Testy", "abc123");
 
-		Thread.sleep(200); // give time for async
+			Thread.sleep(200); // give time for async
 
-		// Verify the template engine was used correctly
-		ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
-		verify(templateEngine).process(eq("verification-email"), contextCaptor.capture());
+			// Verify the template engine was used correctly
+			ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+			verify(templateEngine).process(eq("verification-email"), contextCaptor.capture());
 
-		Context capturedContext = contextCaptor.getValue();
-		assertEquals("Testy", capturedContext.getVariable("firstName"));
-		assertEquals("https://app.com/api/v1/auth/verify?token=abc123", capturedContext.getVariable("link"));
+			Context capturedContext = contextCaptor.getValue();
+			assertEquals("Testy", capturedContext.getVariable("firstName"));
+			assertEquals("https://app.com/api/v1/auth/verify?token=abc123", capturedContext.getVariable("link"));
 
-		// Also verify email was sent
-		verify(mailSender).send(any(MimeMessage.class));
+			// Also verify email was sent
+			verify(mailSender).send(any(MimeMessage.class));
+		}
+
+
+		@Test
+		void shouldLogErrorWhenEmailSendFails() throws Exception {
+			MimeMessage mimeMessage = new MimeMessage((Session) null);
+			when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+			when(templateEngine.process(anyString(), any(Context.class)))
+					.thenReturn("<html><body>Mocked Email</body></html>");
+
+			doThrow(new MailSendException("SMTP error"))
+					.when(mailSender).send(any(MimeMessage.class));
+
+			emailService.sendVerificationEmail("fail@example.com", "TestFail", "xyz");
+
+			Thread.sleep(200); // wait for async
+
+			verify(mailSender).send(any(MimeMessage.class));
+			verify(templateEngine).process(eq("verification-email"), any(Context.class));
+		}
 	}
 
+	@Nested
+	@DisplayName("Reset Password Email Tests")
+	class ResetPasswordEmailTests {
 
-	@Test
-	void shouldLogErrorWhenEmailSendFails() throws Exception {
-		MimeMessage mimeMessage = new MimeMessage((Session) null);
-		when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-		when(templateEngine.process(anyString(), any(Context.class)))
-				.thenReturn("<html><body>Mocked Email</body></html>");
+		@Test
+		@DisplayName("Should send reset password email successfully")
+		void shouldSendResetPasswordEmailSuccessfully() throws Exception {
+			MimeMessage mimeMessage = new MimeMessage((Session) null);
+			when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+			when(templateEngine.process(eq("reset-password-email"), any(Context.class)))
+					.thenReturn("<html><body>Reset Email Content</body></html>");
 
-		doThrow(new MailSendException("SMTP error"))
-				.when(mailSender).send(any(MimeMessage.class));
+			emailService.sendResetPasswordEmail("reset@example.com", "Resetty", "654321");
 
-		emailService.sendVerificationEmail("fail@example.com", "TestFail", "xyz");
+			// Delay for @Async execution (if not removed)
+			Thread.sleep(200);
 
-		Thread.sleep(200); // wait for async
+			ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+			verify(templateEngine).process(eq("reset-password-email"), contextCaptor.capture());
 
-		verify(mailSender).send(any(MimeMessage.class));
-		verify(templateEngine).process(eq("verification-email"), any(Context.class));
+			Context capturedContext = contextCaptor.getValue();
+			assertEquals("Resetty", capturedContext.getVariable("firstName"));
+			assertEquals("654321", capturedContext.getVariable("code"));
+
+			verify(mailSender).send(any(MimeMessage.class));
+		}
+
+		@Test
+		@DisplayName("Should log error when reset password email fails to send")
+		void shouldLogErrorWhenResetPasswordEmailFails() throws Exception {
+			MimeMessage mimeMessage = new MimeMessage((Session) null);
+			when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+			when(templateEngine.process(anyString(), any(Context.class)))
+					.thenReturn("<html><body>Error Reset Email</body></html>");
+
+			doThrow(new MailSendException("SMTP error")).when(mailSender).send(any(MimeMessage.class));
+
+			emailService.sendResetPasswordEmail("fail@example.com", "FailUser", "000000");
+
+			Thread.sleep(200); // wait for async if needed
+
+			verify(mailSender).send(any(MimeMessage.class));
+			verify(templateEngine).process(eq("reset-password-email"), any(Context.class));
+		}
 	}
 }
