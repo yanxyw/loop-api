@@ -158,7 +158,7 @@ public class AuthController {
 	)
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Reset code sent successfully"),
-			@ApiResponse(responseCode = "400", description = "Email not registered"),
+			@ApiResponse(responseCode = "404", description = "Email not registered"),
 			@ApiResponse(responseCode = "500", description = "Unexpected server error")
 	})
 	@PostMapping(ApiRoutes.Auth.FORGOT_PASSWORD)

@@ -1,7 +1,9 @@
 package com.loop.api.scheduler;
 
+import com.loop.api.modules.auth.model.PasswordResetCode;
 import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.auth.model.VerificationToken;
+import com.loop.api.modules.auth.repository.PasswordResetCodeRepository;
 import com.loop.api.modules.auth.repository.RefreshTokenRepository;
 import com.loop.api.modules.auth.repository.VerificationTokenRepository;
 import com.loop.api.modules.user.model.User;
@@ -33,6 +35,9 @@ public class TokenCleanupJobIT {
 
 	@Autowired
 	private VerificationTokenRepository verificationTokenRepository;
+
+	@Autowired
+	private PasswordResetCodeRepository passwordResetCodeRepository;
 
 	@Autowired
 	private TokenCleanupJob cleanupJob;
@@ -97,5 +102,30 @@ public class TokenCleanupJobIT {
 		List<VerificationToken> remaining = verificationTokenRepository.findAll();
 		assertEquals(1, remaining.size());
 		assertEquals("valid123", remaining.getFirst().getToken());
+	}
+
+	@Test
+	void shouldDeleteExpiredPasswordResetCode() {
+		User user1 = userRepository.save(TestUserFactory.randomRegularUser());
+		User user2 = userRepository.save(TestUserFactory.randomRegularUser());
+
+		PasswordResetCode expired = new PasswordResetCode();
+		expired.setCode("expired123");
+		expired.setExpiryDate(Instant.now().minus(Duration.ofDays(1)));
+		expired.setUser(user1);
+
+		PasswordResetCode valid = new PasswordResetCode();
+		valid.setCode("valid123");
+		valid.setExpiryDate(Instant.now().plus(Duration.ofDays(1)));
+		valid.setUser(user2);
+
+		passwordResetCodeRepository.saveAll(List.of(expired, valid));
+
+		// Run cleanup job
+		cleanupJob.cleanExpiredPasswordResetCodes();
+
+		List<PasswordResetCode> remaining = passwordResetCodeRepository.findAll();
+		assertEquals(1, remaining.size());
+		assertEquals("valid123", remaining.getFirst().getCode());
 	}
 }
