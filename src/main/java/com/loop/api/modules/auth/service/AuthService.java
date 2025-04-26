@@ -2,15 +2,16 @@ package com.loop.api.modules.auth.service;
 
 import com.loop.api.common.exception.*;
 import com.loop.api.common.util.UserValidationUtil;
-import com.loop.api.modules.auth.dto.LoginRequest;
-import com.loop.api.modules.auth.dto.LoginResponse;
-import com.loop.api.modules.auth.dto.RegisterRequest;
+import com.loop.api.modules.auth.dto.*;
 import com.loop.api.modules.auth.model.PasswordResetCode;
 import com.loop.api.modules.auth.model.RefreshToken;
 import com.loop.api.modules.auth.model.VerificationToken;
 import com.loop.api.modules.auth.repository.PasswordResetCodeRepository;
 import com.loop.api.modules.auth.repository.VerificationTokenRepository;
+import com.loop.api.modules.user.model.AuthProvider;
 import com.loop.api.modules.user.model.User;
+import com.loop.api.modules.user.model.UserOAuth;
+import com.loop.api.modules.user.repository.UserOAuthRepository;
 import com.loop.api.modules.user.repository.UserRepository;
 import com.loop.api.security.JwtTokenProvider;
 import com.loop.api.security.UserPrincipal;
@@ -39,6 +40,8 @@ public class AuthService {
 	private final EmailService emailService;
 	private final VerificationTokenRepository verificationTokenRepository;
 	private final PasswordResetCodeRepository passwordResetCodeRepository;
+	private final GoogleOAuthService googleOAuthService;
+	private final UserOAuthRepository userOAuthRepository;
 
 	@Value("${app.verification.token-expiration-hours}")
 	private int verificationTokenExpiryHours;
@@ -48,7 +51,8 @@ public class AuthService {
 					   AuthenticationManager authenticationManager,
 					   EmailService emailService,
 					   VerificationTokenRepository verificationTokenRepository,
-					   PasswordResetCodeRepository passwordResetCodeRepository) {
+					   PasswordResetCodeRepository passwordResetCodeRepository,
+					   GoogleOAuthService googleOAuthService, UserOAuthRepository userOAuthRepository) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
@@ -57,6 +61,8 @@ public class AuthService {
 		this.emailService = emailService;
 		this.verificationTokenRepository = verificationTokenRepository;
 		this.passwordResetCodeRepository = passwordResetCodeRepository;
+		this.googleOAuthService = googleOAuthService;
+		this.userOAuthRepository = userOAuthRepository;
 	}
 
 	public boolean isEmailRegistered(String email) {
@@ -235,5 +241,62 @@ public class AuthService {
 		userRepository.save(user);
 
 		passwordResetCodeRepository.delete(resetCode);
+	}
+
+	@Transactional
+	public LoginResponse oauthLogin(OAuthLoginRequest request) {
+		if (!"google".equalsIgnoreCase(request.getProvider())) {
+			throw new UnsupportedOperationException("Only Google login is supported for now.");
+		}
+
+		GoogleTokenResponse tokenResponse = googleOAuthService.exchangeCodeForTokens(request.getCode(),
+				request.getRedirectUri());
+
+		GoogleUserInfo userInfo = googleOAuthService.getUserInfo(tokenResponse.getIdToken());
+
+		Optional<User> existingUserOpt = userRepository.findByEmail(userInfo.getEmail());
+
+		User user;
+		if (existingUserOpt.isPresent()) {
+			user = existingUserOpt.get();
+
+			Optional<UserOAuth> existingConnection = userOAuthRepository.findByUserIdAndProvider(user.getId(),
+					AuthProvider.GOOGLE);
+
+			if (existingConnection.isEmpty()) {
+				UserOAuth userOAuth = new UserOAuth();
+				userOAuth.setUser(user);
+				userOAuth.setProvider(AuthProvider.GOOGLE);
+				userOAuth.setProviderId(userInfo.getSub());
+				userOAuthRepository.save(userOAuth);
+			}
+		} else {
+			user = createNewUser(userInfo);
+		}
+
+		Long userId = user.getId();
+		String accessToken = jwtTokenProvider.generateToken(user);
+		String refreshToken = refreshTokenService.createRefreshToken(userId).getToken();
+
+		return new LoginResponse(userId, accessToken, refreshToken);
+	}
+
+	private User createNewUser(GoogleUserInfo userInfo) {
+		User user = new User();
+		user.setEmail(userInfo.getEmail());
+		user.setUsername(userInfo.getName());
+		user.setVerified(userInfo.isEmailVerified());
+		user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+		user.setProfileUrl(userInfo.getPicture());
+
+		user = userRepository.save(user);
+
+		UserOAuth userOAuth = new UserOAuth();
+		userOAuth.setUser(user);
+		userOAuth.setProvider(AuthProvider.GOOGLE);
+		userOAuth.setProviderId(userInfo.getSub());
+		userOAuthRepository.save(userOAuth);
+
+		return user;
 	}
 }

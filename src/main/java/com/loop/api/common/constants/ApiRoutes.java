@@ -24,6 +24,7 @@ public final class ApiRoutes {
 		public static final String FORGOT_PASSWORD = BASE + "/forgot-password";
 		public static final String VERIFY_RESET_CODE = BASE + "/verify-reset-code";
 		public static final String RESET_PASSWORD = BASE + "/reset-password";
+		public static final String OAUTH_LOGIN = BASE + "/oauth-login";
 	}
 
 	public static final class User {

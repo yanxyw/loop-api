@@ -67,6 +67,10 @@ jwt:
   accessExpirationMs: ${JWT_ACCESS_EXPIRATION_MS}
   refreshExpirationMs: ${JWT_REFRESH_EXPIRATION_MS}
 
+google:
+  client-id: ${GOOGLE_CLIENT_ID}
+  client-secret: ${GOOGLE_CLIENT_SECRET}
+
 logging:
   level:
     root: INFO

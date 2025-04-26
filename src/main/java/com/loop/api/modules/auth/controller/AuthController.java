@@ -196,4 +196,12 @@ public class AuthController {
 		authService.resetPassword(request.getEmail(), request.getCode(), request.getNewPassword());
 		return ResponseEntity.ok(StandardResponse.success(HttpStatus.OK, "Password updated", null));
 	}
+
+	@PostMapping(ApiRoutes.Auth.OAUTH_LOGIN)
+	public ResponseEntity<StandardResponse<LoginResponse>> oauthLogin(@RequestBody OAuthLoginRequest request) {
+		LoginResponse loginResponse = authService.oauthLogin(request);
+		return ResponseEntity.ok(
+				StandardResponse.success(HttpStatus.OK, "Login successful", loginResponse)
+		);
+	}
 }

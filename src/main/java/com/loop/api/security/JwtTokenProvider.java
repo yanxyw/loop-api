@@ -1,5 +1,6 @@
 package com.loop.api.security;
 
+import com.loop.api.modules.user.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -31,6 +32,19 @@ public class JwtTokenProvider {
 				.claim("username", user.getUsername())
 				.claim("profileUrl", user.getProfileUrl())
 				.claim("isAdmin", user.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN")))
+				.issuedAt(new Date())
+				.expiration(new Date(System.currentTimeMillis() + expirationTime))
+				.signWith(key)
+				.compact();
+	}
+
+	public String generateToken(User user) {
+		return Jwts.builder()
+				.subject(String.valueOf(user.getId()))
+				.claim("email", user.getEmail())
+				.claim("username", user.getUsername())
+				.claim("profileUrl", user.getProfileUrl())
+				.claim("isAdmin", user.isAdmin())
 				.issuedAt(new Date())
 				.expiration(new Date(System.currentTimeMillis() + expirationTime))
 				.signWith(key)
