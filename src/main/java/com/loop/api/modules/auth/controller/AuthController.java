@@ -152,18 +152,45 @@ public class AuthController {
 		);
 	}
 
+	@Operation(
+			summary = "Send password reset email",
+			description = "Sends a password reset email to the provided email address with a 6-digit reset code."
+	)
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Reset code sent successfully"),
+			@ApiResponse(responseCode = "404", description = "Email not registered"),
+			@ApiResponse(responseCode = "500", description = "Unexpected server error")
+	})
 	@PostMapping(ApiRoutes.Auth.FORGOT_PASSWORD)
 	public ResponseEntity<StandardResponse<String>> forgotPassword(@RequestParam String email) {
 		authService.sendPasswordResetEmail(email);
 		return ResponseEntity.ok(StandardResponse.success(HttpStatus.OK, "Reset code sent", null));
 	}
 
+	@Operation(
+			summary = "Verify password reset code",
+			description = "Verifies the reset code provided by the user to allow them to reset their password."
+	)
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Reset code is valid"),
+			@ApiResponse(responseCode = "401", description = "Invalid reset code"),
+			@ApiResponse(responseCode = "500", description = "Unexpected server error")
+	})
 	@PostMapping(ApiRoutes.Auth.VERIFY_RESET_CODE)
 	public ResponseEntity<StandardResponse<String>> verifyResetCode(@RequestBody VerifyResetCodeRequest request) {
 		authService.verifyResetCode(request.getEmail(), request.getCode());
 		return ResponseEntity.ok(StandardResponse.success(HttpStatus.OK, "Reset code is valid", null));
 	}
 
+	@Operation(
+			summary = "Reset user password",
+			description = "Resets the user's password after verifying the reset code provided."
+	)
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Password successfully updated"),
+			@ApiResponse(responseCode = "401", description = "Invalid reset code"),
+			@ApiResponse(responseCode = "500", description = "Unexpected server error")
+	})
 	@PostMapping(ApiRoutes.Auth.RESET_PASSWORD)
 	public ResponseEntity<StandardResponse<String>> resetPassword(@RequestBody ResetPasswordRequest request) {
 		authService.resetPassword(request.getEmail(), request.getCode(), request.getNewPassword());

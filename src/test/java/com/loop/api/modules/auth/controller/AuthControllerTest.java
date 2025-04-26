@@ -516,6 +516,46 @@ public class AuthControllerTest {
 	}
 
 	@Nested
+	@DisplayName("Tests for forgot password functionality")
+	class ForgotPasswordTests {
+
+		@Test
+		@DisplayName("Should return 200 OK if reset code is sent successfully")
+		void shouldSendResetCodeSuccessfully() throws Exception {
+			String email = "valid@example.com";
+
+			doNothing().when(authService).sendPasswordResetEmail(email);
+
+			mockMvc.perform(post(ApiRoutes.Auth.FORGOT_PASSWORD)
+							.param("email", email))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("SUCCESS"))
+					.andExpect(jsonPath("$.code").value(200))
+					.andExpect(jsonPath("$.message").value("Reset code sent"))
+					.andExpect(jsonPath("$.data").isEmpty());
+
+			verify(authService).sendPasswordResetEmail(email);
+		}
+
+		@Test
+		@DisplayName("Should return 404 if email is not registered")
+		void shouldReturnBadRequestIfEmailNotRegistered() throws Exception {
+			String email = "not_registered@example.com";
+
+			doThrow(new UserNotFoundException("This email is not registered")).when(authService).sendPasswordResetEmail(email);
+
+			mockMvc.perform(post(ApiRoutes.Auth.FORGOT_PASSWORD)
+							.param("email", email))
+					.andExpect(status().isNotFound())
+					.andExpect(jsonPath("$.status").value("ERROR"))
+					.andExpect(jsonPath("$.code").value(404))
+					.andExpect(jsonPath("$.message").value("This email is not registered"));
+
+			verify(authService).sendPasswordResetEmail(email);
+		}
+	}
+
+	@Nested
 	@DisplayName("Tests for verifying reset code")
 	class VerifyResetCodeTests {
 
