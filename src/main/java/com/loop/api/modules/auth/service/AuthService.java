@@ -24,6 +24,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -249,10 +251,12 @@ public class AuthService {
 			throw new UnsupportedOperationException("Only Google login is supported for now.");
 		}
 
-		GoogleTokenResponse tokenResponse = googleOAuthService.exchangeCodeForTokens(request.getCode(),
-				request.getRedirectUri());
-
-		GoogleUserInfo userInfo = googleOAuthService.getUserInfo(tokenResponse.getIdToken());
+		GoogleUserInfo userInfo;
+		try {
+			userInfo = googleOAuthService.getUserInfo(request);
+		} catch (GeneralSecurityException | IOException e) {
+			throw new OAuthProcessingException("Failed to verify Google identity", e);
+		}
 
 		Optional<User> existingUserOpt = userRepository.findByEmail(userInfo.getEmail());
 

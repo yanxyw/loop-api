@@ -82,6 +82,13 @@ public class GlobalExceptionHandler {
 				.body(StandardResponse.error(HttpStatus.BAD_REQUEST, ex.getMessage()));
 	}
 
+	@ExceptionHandler(OAuthProcessingException.class)
+	public ResponseEntity<StandardResponse<?>> handleOAuthException(OAuthProcessingException ex) {
+		return ResponseEntity
+				.status(HttpStatus.UNAUTHORIZED)
+				.body(StandardResponse.error(HttpStatus.UNAUTHORIZED, "Unauthorized: " + ex.getMessage()));
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<StandardResponse<Void>> handleGlobalException(Exception ex) {
 		return ResponseEntity

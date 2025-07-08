@@ -68,8 +68,9 @@ jwt:
   refreshExpirationMs: ${JWT_REFRESH_EXPIRATION_MS}
 
 google:
-  client-id: ${GOOGLE_CLIENT_ID}
-  client-secret: ${GOOGLE_CLIENT_SECRET}
+  desktopClientId: ${GOOGLE_DESKTOP_CLIENT_ID}
+  desktopClientSecret: ${GOOGLE_DESKTOP_CLIENT_SECRET}
+  webClientId: ${GOOGLE_WEB_CLIENT_ID}
 
 logging:
   level:
