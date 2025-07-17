@@ -71,6 +71,8 @@ google:
   desktopClientId: ${GOOGLE_DESKTOP_CLIENT_ID}
   desktopClientSecret: ${GOOGLE_DESKTOP_CLIENT_SECRET}
   webClientId: ${GOOGLE_WEB_CLIENT_ID}
+  androidClientId: ${GOOGLE_ANDROID_CLIENT_ID}
+  iosClientId: ${GOOGLE_IOS_CLIENT_ID}
 
 logging:
   level:

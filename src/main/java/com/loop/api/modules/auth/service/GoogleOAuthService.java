@@ -22,7 +22,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.Collections;
+import java.util.Arrays;
 
 @Component
 public class GoogleOAuthService {
@@ -34,6 +34,12 @@ public class GoogleOAuthService {
 
 	@Value("${google.webClientId}")
 	private String webClientId;
+
+	@Value("${google.androidClientId}")
+	private String androidClientId;
+
+	@Value("${google.iosClientId}")
+	private String iosClientId;
 
 	@Value("${google.desktopClientSecret}")
 	private String desktopClientSecret;
@@ -55,9 +61,10 @@ public class GoogleOAuthService {
 	}
 
 	public GoogleUserInfo verifyIdToken(String idTokenString) throws GeneralSecurityException, IOException {
+		System.out.println("id token: " + idTokenString);
 		GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier
 				.Builder(new NetHttpTransport(), JSON_FACTORY)
-				.setAudience(Collections.singletonList(webClientId))
+				.setAudience(Arrays.asList(webClientId, androidClientId, iosClientId))
 				.build();
 
 		GoogleIdToken idToken = verifier.verify(idTokenString);
